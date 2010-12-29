@@ -19,8 +19,8 @@ using namespace std;
 
 #define NUM_PARTICLES   2
 #define RECORDINGS      1000
-#define PER_RECORDING   1                // s
-#define TIMESTEPS       1                // s-1
+#define PER_RECORDING   10               // s
+#define TIMESTEPS       1000000          // s-1
 #define GRAV_CONSTANT   0.00000000006673 // m3 kg-1 s-2
 
 #define UNIVERSIZE      10000.0
@@ -58,26 +58,40 @@ int main() {
 		return -1;
 	}
 
+  float3 forces[NUM_PARTICLES][NUM_PARTICLES];
 	for (int t = 0; t < RECORDINGS; ++t) {
-		for (int t2 = 0; t2 < TIMESTEPS; ++t2) {
+	  int timesteps = ceil((float) TIMESTEPS / length(myParticles[1].pos - myParticles[0].pos));
+	
+		for (int t2 = 0; t2 < timesteps; ++t2) {
 			for (int x = 0; x < NUM_PARTICLES; ++x) {
 			  myParticles[x].frc = make_float3(0.0);
-			
+			  
 				for (int y = 0; y < NUM_PARTICLES; ++y) {
-					if (x != y) {
-						float distance = length(myParticles[y].pos - myParticles[x].pos);
-						float gravity = GRAV_CONSTANT * myParticles[x].mass * myParticles[y].mass / pow(distance, 2);
-						
-						myParticles[x].frc += gravity * (myParticles[y].pos - myParticles[x].pos) / distance;
-					}
-				}
+				  if (x != y) {
+				    if (x < y) {
+				      float distance = length(myParticles[y].pos - myParticles[x].pos);
+					    float gravity = GRAV_CONSTANT * myParticles[x].mass * myParticles[y].mass / pow(distance, 2.0);
+					
+					    forces[x][y] = gravity * (myParticles[y].pos - myParticles[x].pos) / distance;
+				    } else { forces[x][y] = -forces[y][x]; }
+				  }
 				
-				myParticles[x].acl = myParticles[x].frc / myParticles[x].mass;
-				myParticles[x].vel += myParticles[x].acl * (float) PER_RECORDING / (float) TIMESTEPS;
-				myParticles[x].pos += myParticles[x].vel * (float) PER_RECORDING / (float) TIMESTEPS;
+				  myParticles[x].frc += forces[x][y];
+				}
+			}
+			
+			for (int x = 0; x < NUM_PARTICLES; ++x) {
+			  myParticles[x].acl = myParticles[x].frc / myParticles[x].mass;
+			  
+			  float3 acl = myParticles[x].acl * (float) PER_RECORDING / (float) timesteps;
+			  float3 vel = myParticles[x].vel * (float) PER_RECORDING / (float) timesteps;
+				
+				myParticles[x].vel += acl;
+				myParticles[x].pos += vel;
 			}
 		}
 		
+		myfile << timesteps << ",";
 		for (int i = 0; i < NUM_PARTICLES; ++i) {
 			myfile << myParticles[i].pos.x << "," << myParticles[i].vel.x << "," << myParticles[i].acl.x << ",";
 		}
