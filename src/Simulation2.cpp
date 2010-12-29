@@ -18,11 +18,11 @@
 using namespace std;
 
 #define NUM_PARTICLES   2
-#define TIME            1000             // s
-#define TIMESTEPS       10               // s-1
+#define TIME            100000             // s
+#define TIMESTEPS       1               // s-1
 #define GRAV_CONSTANT   0.00000000006673 // m3 kg-1 s-2
 
-#define UNIVERSIZE      1638350.0
+#define UNIVERSIZE      5000.0
 #define MASS            5974200000000000000000000.0
 
 struct Particle {
@@ -70,8 +70,8 @@ int main() {
 
 			for(int x = 0; x < NUM_PARTICLES; ++x) {
 				myParticles[x].acl = myParticles[x].frc / myParticles[x].mass;
-				myParticles[x].pos += myParticles[x].vel * TIME + 0.5 * myParticles[x].acl * pow(1.0 / TIMESTEPS, 2);
-				myParticles[x].vel += myParticles[x].vel + myParticles[x].acl * 1.0 / TIMESTEPS;
+				myParticles[x].pos += myParticles[x].vel * 1.0 / TIMESTEPS + 0.5 * myParticles[x].acl * pow(1.0 / TIMESTEPS, 2);
+				myParticles[x].vel += myParticles[x].acl * 1.0 / TIMESTEPS;
 			}
 		}
 
