@@ -18,11 +18,12 @@
 using namespace std;
 
 #define NUM_PARTICLES   2
-#define TIME            1000             // s
-#define TIMESTEPS       10               // s-1
+#define RECORDINGS      1000
+#define PER_RECORDING   100000000        // s
+#define TIMESTEPS       1000             // s-1
 #define GRAV_CONSTANT   0.00000000006673 // m3 kg-1 s-2
 
-#define UNIVERSIZE      1638350.0
+#define UNIVERSIZE      100.0
 #define MASS            5974200000000000000000000.0
 
 struct Particle {
@@ -47,6 +48,7 @@ int main() {
 		myParticles[x].acl = make_float3(0.0);
 		myParticles[x].frc = make_float3(0.0);
 		myParticles[x].mass = MASS;
+		
 		cout << "[" << myParticles[x].pos.x << "], [" << myParticles[x].pos.y << "], [" << myParticles[x].pos.z << "]. " << "Mass: " << myParticles[x].mass << endl;
 	}
 
@@ -56,7 +58,7 @@ int main() {
 		return -1;
 	}
 
-	for (int t = 0; t < TIME; ++t) {
+	for (int t = 0; t < RECORDINGS; ++t) {
 		for (int t2 = 0; t2 < TIMESTEPS; ++t2) {
 			for (int x = 0; x < NUM_PARTICLES; ++x) {
 				for (int y = 0; y < NUM_PARTICLES; ++y) {
@@ -66,12 +68,10 @@ int main() {
 						myParticles[x].frc += gravity * (myParticles[y].pos - myParticles[x].pos) / distance;
 					}
 				}
-			}
-
-			for(int x = 0; x < NUM_PARTICLES; ++x) {
+				
+				myParticles[x].pos += myParticles[x].vel * PER_RECORDING / TIMESTEPS;
+				myParticles[x].vel += myParticles[x].acl * PER_RECORDING / TIMESTEPS;
 				myParticles[x].acl = myParticles[x].frc / myParticles[x].mass;
-				myParticles[x].pos += myParticles[x].vel * TIME + 0.5 * myParticles[x].acl * pow(1.0 / TIMESTEPS, 2);
-				myParticles[x].vel += myParticles[x].vel + myParticles[x].acl * 1.0 / TIMESTEPS;
 			}
 		}
 
