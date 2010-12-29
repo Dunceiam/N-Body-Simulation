@@ -8,14 +8,14 @@
 
 #include "float3.h"
 
-#define NUM_PARTICLES   8
+#define NUM_PARTICLES   100
 #define TIME            1                  // s   (seconds per frame)
-#define TIMESTEPS       100                // s-1 (timesteps per time)
+#define TIMESTEPS       1               // s-1 (timesteps per time)
 #define GRAV_CONSTANT   0.00000000006673   // m3 kg-1 s-2
 
 #define UNIVERSIZE      10000.0            // m
 #define MASS            5974200000000000.0 // kg
-#define SOFTEN          1000000.0          // m (I guess)
+#define SOFTEN          10000.0            // m (I guess)
 
 #define RADIUS          0.04
 #define SLICES          8
@@ -48,7 +48,7 @@ void updateParticles() {
 			    if (x < y) { 
 			      // calculate force, as force[y][x] won't have been calculated yet
 			      float distance = length(p2->pos - p->pos);
-				    float gravity = GRAV_CONSTANT * p->mass * p2->mass / (pow(distance, 2.0) + SOFTEN);
+				    float gravity = GRAV_CONSTANT * p->mass * p2->mass / (pow(distance, 2.0) + SOFTEN * SOFTEN);
 				
 				    forces[x][y] = gravity * (p2->pos - p->pos) / distance;
 			    } else { 
@@ -65,17 +65,18 @@ void updateParticles() {
 		
 		for (int x = 0; x < NUM_PARTICLES; ++x) {
 		  Particle* p = &myParticles[x]; // using a pointer to reduce typing
-		
-		  float3 acl = p->acl * (float) TIME / (float) TIMESTEPS; // calculate the acceleration for this interval
-		  float3 vel = p->vel * (float) TIME / (float) TIMESTEPS; // calculate the velocity for this interval
-			
-			p->vel += acl; // add the accel to the velocity
-			p->pos += vel; // add the velocity to the position
+		  
+		  float deltat = (float) TIME / (float) TIMESTEPS;
+
+	    float3 vel = p->vel;
+	  
+	    p->vel += p->acl * deltat;
+	    p->pos += vel * deltat + 0.5 * p->acl * pow(deltat, 2.0);
 			
 			// if the position is outside the bounds AND the position and velocity have the same sign (so the velocity is taking the object outside the box), then flip the velocity sign
-			if (abs(p->pos.x) > UNIVERSIZE && p->pos.x / p->vel.x > 0.0) { p->vel.x = -p->vel.x; }
+			/*if (abs(p->pos.x) > UNIVERSIZE && p->pos.x / p->vel.x > 0.0) { p->vel.x = -p->vel.x; }
 			if (abs(p->pos.y) > UNIVERSIZE && p->pos.y / p->vel.y > 0.0) { p->vel.y = -p->vel.y; }
-			if (abs(p->pos.z) > UNIVERSIZE && p->pos.z / p->vel.z > 0.0) { p->vel.z = -p->vel.z; }
+			if (abs(p->pos.z) > UNIVERSIZE && p->pos.z / p->vel.z > 0.0) { p->vel.z = -p->vel.z; }*/
 		}
 	}
 }
