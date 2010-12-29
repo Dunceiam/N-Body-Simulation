@@ -12,22 +12,16 @@
 #include <stdlib.h>
 #include <math.h>
 #include <fstream>
+
+#include "float3.h"
+
 using namespace std;
 
-struct Particle
-{
-	float x;
-	float y;
-	float z;
-	float xv;
-	float yv;
-	float zv;
-	float xaccel;
-	float yaccel;
-	float zaccel;
-	float forcex;
-	float forcey;
-	float forcez;
+struct Particle {
+	float3 pos;
+	float3 vel;
+	float3 acl;
+	float3 frc;
 	float mass;
 };
 
