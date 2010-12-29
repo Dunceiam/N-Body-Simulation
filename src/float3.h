@@ -30,25 +30,13 @@ inline int min(int a, int b)
 }
 
 // additional constructors
-inline float3 make_float3(float s)
-{
+inline float3 make_float3(float x, float y, float z) {
+  float3 temp = {x, y, z};
+  return temp;
+}
+
+inline float3 make_float3(float s) {
     return make_float3(s, s, s);
-}
-inline float3 make_float3(float2 a)
-{
-    return make_float3(a.x, a.y, 0.0f);
-}
-inline float3 make_float3(float2 a, float s)
-{
-    return make_float3(a.x, a.y, s);
-}
-inline float3 make_float3(float4 a)
-{
-    return make_float3(a.x, a.y, a.z);  // discards w
-}
-inline float3 make_float3(int3 a)
-{
-    return make_float3(float(a.x), float(a.y), float(a.z));
 }
 
 // negate
@@ -58,13 +46,13 @@ inline float3 operator-(float3 &a)
 }
 
 // min
-static  float3 fminf(float3 a, float3 b)
+static float3 fminf(float3 a, float3 b)
 {
 	return make_float3(fminf(a.x,b.x), fminf(a.y,b.y), fminf(a.z,b.z));
 }
 
 // max
-static  float3 fmaxf(float3 a, float3 b)
+static float3 fmaxf(float3 a, float3 b)
 {
 	return make_float3(fmaxf(a.x,b.x), fmaxf(a.y,b.y), fmaxf(a.z,b.z));
 }
@@ -140,6 +128,10 @@ inline void operator/=(float3 &a, float s)
 inline float3 lerp(float3 a, float3 b, float t)
 {
     return a + t*(b-a);
+}
+
+inline float clamp(float x, float y, float z) {
+  return fminf(fminf(x, y), z);
 }
 
 // clamp
