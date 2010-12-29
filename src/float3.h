@@ -58,13 +58,13 @@ inline float3 operator-(float3 &a)
 }
 
 // min
-static __inline__ float3 fminf(float3 a, float3 b)
+static  float3 fminf(float3 a, float3 b)
 {
 	return make_float3(fminf(a.x,b.x), fminf(a.y,b.y), fminf(a.z,b.z));
 }
 
 // max
-static __inline__ float3 fmaxf(float3 a, float3 b)
+static  float3 fmaxf(float3 a, float3 b)
 {
 	return make_float3(fmaxf(a.x,b.x), fmaxf(a.y,b.y), fmaxf(a.z,b.z));
 }
