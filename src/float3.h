@@ -179,6 +179,6 @@ inline float3 floor(const float3 v)
 // reflect
 inline float3 reflect(float3 i, float3 n)
 {
-	return i - 2.0f * n * dot(n,i);
+	return i - 2.0f * n * dot(n, i);
 }
 #endif
