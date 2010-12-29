@@ -18,12 +18,12 @@
 using namespace std;
 
 #define NUM_PARTICLES   2
-#define RECORDINGS      10000			 // number of recordings displayed
-#define PER_RECORDING   1      		 // number of seconds per recording (one day)
-#define TIMESTEPS       1               // number of latent calculations per recording
+#define RECORDINGS      1000
+#define PER_RECORDING   1.0                // s
+#define TIMESTEPS       1.0                // s-1
 #define GRAV_CONSTANT   0.00000000006673 // m3 kg-1 s-2
 
-#define UNIVERSIZE      4000.0
+#define UNIVERSIZE      100000.0
 #define MASS            5974200000000000000000000.0
 
 struct Particle {
@@ -43,7 +43,7 @@ int main() {
 
 	Particle myParticles[NUM_PARTICLES];
 	for (int x = 0; x < NUM_PARTICLES; ++x) {
-		myParticles[x].pos = make_float3(rand2() * 2.0 - 1.0, rand2() * 2.0 - 1.0, rand2() * 2.0 - 1.0) * UNIVERSIZE;
+		myParticles[x].pos = make_float3(rand2() * 2.0 - 1.0, 0.0, 0.0) * UNIVERSIZE;
 		myParticles[x].vel = make_float3(0.0);
 		myParticles[x].acl = make_float3(0.0);
 		myParticles[x].frc = make_float3(0.0);
@@ -61,30 +61,27 @@ int main() {
 	for (int t = 0; t < RECORDINGS; ++t) {
 		for (int t2 = 0; t2 < TIMESTEPS; ++t2) {
 			for (int x = 0; x < NUM_PARTICLES; ++x) {
-				myParticles[x].frc = make_float3(0.0);
+			  myParticles[x].frc = make_float3(0.0);
+			
 				for (int y = 0; y < NUM_PARTICLES; ++y) {
 					if (x != y) {
 						float distance = length(myParticles[y].pos - myParticles[x].pos);
-						float gravity = GRAV_CONSTANT * MASS * MASS / pow(distance, 2);
+						float gravity = GRAV_CONSTANT * myParticles[x].mass * myParticles[y].mass / pow(distance, 2);
+						
 						myParticles[x].frc += gravity * (myParticles[y].pos - myParticles[x].pos) / distance;
-						//xSum += (gravity*((myParticles[y].x-myParticles[x].x)/distance));
 					}
 				}
 			}
-			for(int x = 0; x < NUM_PARTICLES; ++x)
-			{
+
+			for (int x = 0; x < NUM_PARTICLES; ++x) {
 				myParticles[x].acl = myParticles[x].frc / myParticles[x].mass;
-			//	myParticles[x].xaccel = (myParticles[x].forcex/myParticles[x].mass);
-			//	myParticles[x].pos += myParticles[x].vel * PER_RECORDING / TIMESTEPS;
-				myParticles[x].pos += (myParticles[x].vel * ((float) PER_RECORDING/ (float) TIMESTEPS)) + (0.5*(myParticles[x].acl)*pow(((float) PER_RECORDING/(float) TIMESTEPS), 2));
-			//	myParticles[x].x += (myParticles[x].xv * time) + (0.5*(myParticles[x].xaccel*pow(time,2)));
-				myParticles[x].vel += myParticles[x].acl * (float) PER_RECORDING/ (float) TIMESTEPS;
-			//	myParticles[x].xv += (myParticles[x].xaccel*time);
+				myParticles[x].pos += myParticles[x].vel * (float) PER_RECORDING / (float) TIMESTEPS;
+				myParticles[x].vel += myParticles[x].acl * (float) PER_RECORDING / (float) TIMESTEPS;
 			}
 		}
-
+		
 		for (int i = 0; i < NUM_PARTICLES; ++i) {
-			myfile << myParticles[i].pos.x << "," << myParticles[i].vel.x << "," << myParticles[i].frc.x << ",";
+			myfile << myParticles[i].pos.x << "," << myParticles[i].vel.x << "," << myParticles[i].acl.x << ",";
 		}
 		myfile << endl;
 	}
