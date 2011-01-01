@@ -108,23 +108,37 @@ void display(void) {
 }
 
 void init(void) {
+  GLfloat mat_specular[] = { 1.0, 1.0, 1.0, 1.0 };
+  GLfloat mat_shininess[] = { 50.0 };
+  GLfloat light_position[] = { 1.0, 1.0, 1.0, 0.0 };
+  glClearColor(0.0, 0.0, 0.0, 0.0);
+  glShadeModel(GL_SMOOTH);
+
+  glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
+  glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
+  glLightfv(GL_LIGHT0, GL_POSITION, light_position);
+
   glMatrixMode(GL_PROJECTION); // set up perspectives in projection view
   glLoadIdentity();
   gluPerspective(70.0, 1.0, 1.0, 10.0); // fov, apsect ratio, znear, zfar
   glMatrixMode(GL_MODELVIEW); // set up camera and the scene in model view
   glLoadIdentity();
-  gluLookAt(0.5, 0.0, 2.5,  // origin of the camera
+  gluLookAt(0.5, 2.5, 0.0,  // origin of the camera
             0.0, 0.0, 0.0,  // coordinates the camera is looking at
             0.0, 1.0, 0.0); // the up direction
 
   srand(time(NULL));
   for (int x = 0; x < NUM_PARTICLES; ++x) {
     // generate random positions from -UNIVERSIZE to UNIVERSIZE
-		myParticles[x].pos = make_float3(rand2() * 2.0 - 1.0, rand2() * 2.0 - 1.0, rand2() * 2.0 - 1.0) * UNIVERSIZE;
+		myParticles[x].pos = make_float3(rand2() * 2.0 - 1.0, rand2() * 2.0 - 1.0, 0.0) * UNIVERSIZE;
 		myParticles[x].vel = make_float3(0.0);
 		myParticles[x].acl = make_float3(0.0);
 		myParticles[x].mass = MASS;
 	}
+	
+	glEnable(GL_LIGHTING);
+  glEnable(GL_LIGHT0);
+  glEnable(GL_DEPTH_TEST);
 }
 
 int main(int argc, char **argv) {
