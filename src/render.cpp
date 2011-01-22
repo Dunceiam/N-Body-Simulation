@@ -10,8 +10,8 @@
 
 #include "float3.h"
 
-#define NUM_THREADS     4
-#define NUM_PARTICLES   100
+#define NUM_THREADS     8
+#define NUM_PARTICLES   400
 #define TIME            1                  // s   (seconds per frame)
 #define TIMESTEPS       1               // s-1 (timesteps per time)
 #define GRAV_CONSTANT   0.00000000006673   // m3 kg-1 s-2
@@ -24,15 +24,15 @@
 #define SLICES          8
 
 struct Particle {
-	float3 pos;
-	float3 vel;
-	float3 acl;
-	float mass;
+  float3 pos;
+  float3 vel;
+  float3 acl;
+  float mass;
 };
 
 // Generates random float from 0.0 to 1.0
 float rand2() {
-	return (float) rand() / (float) RAND_MAX;
+  return (float) rand() / (float) RAND_MAX;
 }
 
 Particle myParticles[NUM_PARTICLES];
@@ -43,38 +43,38 @@ void *updateParticlesThread(void *ptr) {
   int to = from + (NUM_PARTICLES / NUM_THREADS); // Same as (i + 1) * (PARTICLES * THREADS)
   
   for (int t2 = 0; t2 < TIMESTEPS; ++t2) {
-		for (int x = from; x < to; ++x) {
-		  Particle* p = &myParticles[x]; // using a pointer to reduce typing
-		  p->acl = make_float3(0.0); // set acl to 0
-		  
-			for (int y = 0; y < NUM_PARTICLES; ++y) {
-			  Particle* p2 = &myParticles[y]; // using a pointer to reduce typing
-		    if (x != y) {
-		      float distance = length(p2->pos - p->pos);
-			    float gravity = GRAV_CONSTANT * p->mass * p2->mass / (pow(distance, 2.0) + SOFTEN * SOFTEN);
+    for (int x = from; x < to; ++x) {
+      Particle* p = &myParticles[x]; // using a pointer to reduce typing
+      p->acl = make_float3(0.0); // set acl to 0
+      
+      for (int y = 0; y < NUM_PARTICLES; ++y) {
+        Particle* p2 = &myParticles[y]; // using a pointer to reduce typing
+        if (x != y) {
+          float distance = length(p2->pos - p->pos);
+          float gravity = GRAV_CONSTANT * p->mass * p2->mass / (pow(distance, 2.0) + SOFTEN * SOFTEN);
 
-			    p->acl += gravity * (p2->pos - p->pos) / distance; // add the force to the acceleration
-			  }
-			}
-			
-			p->acl /= p->mass; // divide by mass to get the real acceleration (it was force up to this point)
-		}
-		
-		for (int x = from; x < to; ++x) {
-	    Particle* p = &myParticles[x]; // using a pointer to reduce typing
-	    
-	    float deltat = (float) TIME / (float) TIMESTEPS;
+          p->acl += gravity * (p2->pos - p->pos) / distance; // add the force to the acceleration
+        }
+      }
+      
+      p->acl /= p->mass; // divide by mass to get the real acceleration (it was force up to this point)
+    }
+    
+    for (int x = from; x < to; ++x) {
+      Particle* p = &myParticles[x]; // using a pointer to reduce typing
+      
+      float deltat = (float) TIME / (float) TIMESTEPS;
 
       float3 vel = p->vel;
     
       p->vel += p->acl * deltat;
       p->pos += vel * deltat + 0.5 * p->acl * pow(deltat, 2.0);
-		
-		  // if the position is outside the bounds AND the position and velocity have the same sign (so the velocity is taking the object outside the box), then flip the velocity sign
-		  /*if (abs(p->pos.x) > UNIVERSIZE && p->pos.x / p->vel.x > 0.0) { p->vel.x = -p->vel.x; }
-		  if (abs(p->pos.y) > UNIVERSIZE && p->pos.y / p->vel.y > 0.0) { p->vel.y = -p->vel.y; }
-		  if (abs(p->pos.z) > UNIVERSIZE && p->pos.z / p->vel.z > 0.0) { p->vel.z = -p->vel.z; }*/
-	  }
+    
+      // if the position is outside the bounds AND the position and velocity have the same sign (so the velocity is taking the object outside the box), then flip the velocity sign
+      /*if (abs(p->pos.x) > UNIVERSIZE && p->pos.x / p->vel.x > 0.0) { p->vel.x = -p->vel.x; }
+      if (abs(p->pos.y) > UNIVERSIZE && p->pos.y / p->vel.y > 0.0) { p->vel.y = -p->vel.y; }
+      if (abs(p->pos.z) > UNIVERSIZE && p->pos.z / p->vel.z > 0.0) { p->vel.z = -p->vel.z; }*/
+    }
   }
 }
 
@@ -147,13 +147,13 @@ void init(void) {
   srand(time(NULL));
   for (int x = 0; x < NUM_PARTICLES; ++x) {
     // generate random positions from -UNIVERSIZE to UNIVERSIZE
-		myParticles[x].pos = make_float3(rand2() * 2.0 - 1.0, rand2() * 2.0 - 1.0, rand2() * 2.0 - 1.0) * UNIVERSIZE;
-		myParticles[x].vel = make_float3(0.0);
-		myParticles[x].acl = make_float3(0.0);
-		myParticles[x].mass = MASS;
-	}
-	
-	glEnable(GL_LIGHTING);
+    myParticles[x].pos = make_float3(rand2() * 2.0 - 1.0, rand2() * 2.0 - 1.0, rand2() * 2.0 - 1.0) * UNIVERSIZE;
+    myParticles[x].vel = make_float3(0.0);
+    myParticles[x].acl = make_float3(0.0);
+    myParticles[x].mass = MASS;
+  }
+  
+  glEnable(GL_LIGHTING);
   glEnable(GL_LIGHT0);
   glEnable(GL_DEPTH_TEST);
 }
