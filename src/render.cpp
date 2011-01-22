@@ -80,10 +80,14 @@ void *updateParticlesThread(void *ptr) {
 
 void updateParticles() {
   pthread_t threads[NUM_THREADS]; // Array with all of the threads
+  int ids[NUM_THREADS];
   
   for (int i = 0; i < NUM_THREADS; ++i) {
+    // Can't pass in just "i" to the function below, as it will keep getting updated!
+    ids[i] = i;
+    
     // Create each of the threads, passing in the function to call (updateParticlesThread) and the parameter (i)
-    pthread_create(&threads[i], NULL, updateParticlesThread, (void*) &i);
+    pthread_create(&threads[i], NULL, updateParticlesThread, (void*) &ids[i]);
   }
   
   // All threads are running at full speed at this point
