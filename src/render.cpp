@@ -6,8 +6,11 @@
 #include <stdio.h>
 #include <math.h>
 
+#include <pthread.h>
+
 #include "float3.h"
 
+#define NUM_THREADS     4
 #define NUM_PARTICLES   100
 #define TIME            1                  // s   (seconds per frame)
 #define TIMESTEPS       1               // s-1 (timesteps per time)
@@ -34,51 +37,61 @@ float rand2() {
 
 Particle myParticles[NUM_PARTICLES];
 
-void updateParticles() {
-	float3 forces[NUM_PARTICLES][NUM_PARTICLES]; // cache force calculations, as force[a][b] is -force[b][a]
-	
-	for (int t2 = 0; t2 < TIMESTEPS; ++t2) {
-		for (int x = 0; x < NUM_PARTICLES; ++x) {
+void *updateParticlesThread(void *ptr) {
+  int i = *((int*) ptr); // I am thread i
+  int from = i * (NUM_PARTICLES / NUM_THREADS);
+  int to = from + (NUM_PARTICLES / NUM_THREADS); // Same as (i + 1) * (PARTICLES * THREADS)
+  
+  for (int t2 = 0; t2 < TIMESTEPS; ++t2) {
+		for (int x = from; x < to; ++x) {
 		  Particle* p = &myParticles[x]; // using a pointer to reduce typing
 		  p->acl = make_float3(0.0); // set acl to 0
 		  
 			for (int y = 0; y < NUM_PARTICLES; ++y) {
 			  Particle* p2 = &myParticles[y]; // using a pointer to reduce typing
 		    if (x != y) {
-			    if (x < y) { 
-			      // calculate force, as force[y][x] won't have been calculated yet
-			      float distance = length(p2->pos - p->pos);
-				    float gravity = GRAV_CONSTANT * p->mass * p2->mass / (pow(distance, 2.0) + SOFTEN * SOFTEN);
-				
-				    forces[x][y] = gravity * (p2->pos - p->pos) / distance;
-			    } else { 
-			      // rather than recalculate force, use -force[y][x]
-			      forces[x][y] = -forces[y][x];
-			    }
-			    
-			    p->acl += forces[x][y]; // add the force to the acceleration
+		      float distance = length(p2->pos - p->pos);
+			    float gravity = GRAV_CONSTANT * p->mass * p2->mass / (pow(distance, 2.0) + SOFTEN * SOFTEN);
+
+			    p->acl += gravity * (p2->pos - p->pos) / distance; // add the force to the acceleration
 			  }
 			}
 			
 			p->acl /= p->mass; // divide by mass to get the real acceleration (it was force up to this point)
 		}
 		
-		for (int x = 0; x < NUM_PARTICLES; ++x) {
-		  Particle* p = &myParticles[x]; // using a pointer to reduce typing
-		  
-		  float deltat = (float) TIME / (float) TIMESTEPS;
+		for (int x = from; x < to; ++x) {
+	    Particle* p = &myParticles[x]; // using a pointer to reduce typing
+	    
+	    float deltat = (float) TIME / (float) TIMESTEPS;
 
-	    float3 vel = p->vel;
-	  
-	    p->vel += p->acl * deltat;
-	    p->pos += vel * deltat + 0.5 * p->acl * pow(deltat, 2.0);
-			
-			// if the position is outside the bounds AND the position and velocity have the same sign (so the velocity is taking the object outside the box), then flip the velocity sign
-			/*if (abs(p->pos.x) > UNIVERSIZE && p->pos.x / p->vel.x > 0.0) { p->vel.x = -p->vel.x; }
-			if (abs(p->pos.y) > UNIVERSIZE && p->pos.y / p->vel.y > 0.0) { p->vel.y = -p->vel.y; }
-			if (abs(p->pos.z) > UNIVERSIZE && p->pos.z / p->vel.z > 0.0) { p->vel.z = -p->vel.z; }*/
-		}
-	}
+      float3 vel = p->vel;
+    
+      p->vel += p->acl * deltat;
+      p->pos += vel * deltat + 0.5 * p->acl * pow(deltat, 2.0);
+		
+		  // if the position is outside the bounds AND the position and velocity have the same sign (so the velocity is taking the object outside the box), then flip the velocity sign
+		  /*if (abs(p->pos.x) > UNIVERSIZE && p->pos.x / p->vel.x > 0.0) { p->vel.x = -p->vel.x; }
+		  if (abs(p->pos.y) > UNIVERSIZE && p->pos.y / p->vel.y > 0.0) { p->vel.y = -p->vel.y; }
+		  if (abs(p->pos.z) > UNIVERSIZE && p->pos.z / p->vel.z > 0.0) { p->vel.z = -p->vel.z; }*/
+	  }
+  }
+}
+
+void updateParticles() {
+  pthread_t threads[NUM_THREADS]; // Array with all of the threads
+  
+  for (int i = 0; i < NUM_THREADS; ++i) {
+    // Create each of the threads, passing in the function to call (updateParticlesThread) and the parameter (i)
+    pthread_create(&threads[i], NULL, updateParticlesThread, (void*) &i);
+  }
+  
+  // All threads are running at full speed at this point
+  
+  for (int i = 0; i < NUM_THREADS; ++i) {
+    // Wait for each thread to finish
+    pthread_join(threads[i], NULL);
+  }
 }
 
 void drawParticles() {
@@ -94,7 +107,7 @@ void drawParticles() {
 }
 
 void drawRest() {
-  glutWireCube(2.0f); // draw a cube with sides of 2
+  //glutWireCube(2.0f); // draw a cube with sides of 2
 }
 
 void display(void) {
@@ -130,7 +143,7 @@ void init(void) {
   srand(time(NULL));
   for (int x = 0; x < NUM_PARTICLES; ++x) {
     // generate random positions from -UNIVERSIZE to UNIVERSIZE
-		myParticles[x].pos = make_float3(rand2() * 2.0 - 1.0, rand2() * 2.0 - 1.0, 0.0) * UNIVERSIZE;
+		myParticles[x].pos = make_float3(rand2() * 2.0 - 1.0, rand2() * 2.0 - 1.0, rand2() * 2.0 - 1.0) * UNIVERSIZE;
 		myParticles[x].vel = make_float3(0.0);
 		myParticles[x].acl = make_float3(0.0);
 		myParticles[x].mass = MASS;
