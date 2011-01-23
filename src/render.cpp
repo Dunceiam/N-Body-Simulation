@@ -14,7 +14,7 @@
 
 #define NUM_THREADS     8
 #define NUM_PARTICLES   400
-#define TIME            500                  // s   (seconds per frame)
+#define TIME            1                  // s   (seconds per frame)
 #define TIMESTEPS       1               // s-1 (timesteps per time)
 #define GRAV_CONSTANT   0.00000000006673   // m3 kg-1 s-2
 #define UNIVERSIZE      1000000.0            // m
@@ -126,43 +126,43 @@ void display(void) {
 }
 
 void init(void) {
-  GLfloat mat_specular[] = { 1.0, 1.0, 1.0, 1.0 };
-  GLfloat mat_shininess[] = { 50.0 };
-  GLfloat light_position[] = { 1.0, 1.0, 1.0, 0.0 };
-  glClearColor(0.0, 0.0, 0.0, 0.0);
-  glShadeModel(GL_SMOOTH);
+	GLfloat mat_specular[] = { 1.0, 1.0, 1.0, 1.0 };
+	GLfloat mat_shininess[] = { 50.0 };
+	GLfloat light_position[] = { 1.0, 1.0, 1.0, 0.0 };
+	glClearColor(0.0, 0.0, 0.0, 0.0);
+	glShadeModel(GL_SMOOTH);
 
-  glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
-  glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
-  glLightfv(GL_LIGHT0, GL_POSITION, light_position);
+	glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
+	glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
+	glLightfv(GL_LIGHT0, GL_POSITION, light_position);
 
-  glMatrixMode(GL_PROJECTION); // set up perspectives in projection view
-  glLoadIdentity();
-  gluPerspective(70.0, 1.0, 1.0, 10.0); // fov, apsect ratio, znear, zfar
-  glMatrixMode(GL_MODELVIEW); // set up camera and the scene in model view
-  glLoadIdentity();
-  gluLookAt(0.5, 2.5, 0.0,  // origin of the camera
-            0.0, 0.0, 0.0,  // coordinates the camera is looking at
-            0.0, 1.0, 0.0); // the up direction
+	glMatrixMode(GL_PROJECTION); // set up perspectives in projection view
+	glLoadIdentity();
+	gluPerspective(50.0, 1.777, 1.0, 10.0); // fov, apsect ratio, znear, zfar
+	glMatrixMode(GL_MODELVIEW); // set up camera and the scene in model view
+	glLoadIdentity();
+	gluLookAt(2.5, 2.0, 3.0,  // origin of the camera
+			0.0, 0.0, 0.0,  // coordinates the camera is looking at
+			0.0, 1.0, 0.0); // the up direction
 
-  srand(time(NULL));
-  for (int x = 0; x < NUM_PARTICLES; ++x) {
-    // generate random positions from -UNIVERSIZE to UNIVERSIZE
-    myParticles[x].pos = make_float3(rand2() * 2.0 - 1.0, rand2() * 2.0 - 1.0, rand2() * 2.0 - 1.0) * UNIVERSIZE;
-    myParticles[x].vel = make_float3(0.0);
-    myParticles[x].acl = make_float3(0.0);
-    myParticles[x].mass = MASS;
-  }
-  
-  glEnable(GL_LIGHTING);
-  glEnable(GL_LIGHT0);
-  glEnable(GL_DEPTH_TEST);
+	srand(time(NULL));
+	for (int x = 0; x < NUM_PARTICLES; ++x) {
+		// generate random positions from -UNIVERSIZE to UNIVERSIZE
+		myParticles[x].pos = make_float3(rand2() * 2.0 - 1.0, rand2() * 2.0 - 1.0, rand2() * 2.0 - 1.0) * UNIVERSIZE;
+		myParticles[x].vel = make_float3(0.0);
+		myParticles[x].acl = make_float3(0.0);
+		myParticles[x].mass = MASS;
+	}
+
+	glEnable(GL_LIGHTING);
+	glEnable(GL_LIGHT0);
+	glEnable(GL_DEPTH_TEST);
 }
 
 int main(int argc, char **argv) {
   glutInit(&argc, argv); // init glut
   glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH); // double frame buffer, rgb colours, and depth detection
-  glutCreateWindow("Dunceiam"); // title of the window
+  glutCreateWindow("N-body Gravitational Simulation"); // title of the window
   glutDisplayFunc(display); // function called to render the window
   glutIdleFunc(display); // function called when window is idle (no need to update)
 
