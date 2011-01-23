@@ -1,5 +1,6 @@
+#include <GL/gl.h>
+#include <GL/glu.h>
 #include <GL/freeglut.h>
-
 #include <stdlib.h>
 #include <time.h>
 #include <iostream>
@@ -19,12 +20,11 @@
 #define TIME            1                  // s   (seconds per frame)
 #define TIMESTEPS       1               // s-1 (timesteps per time)
 #define GRAV_CONSTANT   0.00000000006673   // m3 kg-1 s-2
+#define UNIVERSIZE      1000000.0            // m
+#define MASS            5974200000000000.0 	 // kg
+#define SOFTEN          1000000.0            // m (empirically derived value should be slightly more than UNIVERSIZE)
 
-#define UNIVERSIZE      10000.0            // m
-#define MASS            5974200000000000.0 // kg
-#define SOFTEN          10000.0            // m (I guess)
-
-#define RADIUS          0.04
+#define RADIUS          0.01   				 //best value is 0.01
 #define SLICES          8
 
 struct Particle {
@@ -107,7 +107,7 @@ void updateParticles() {
 void drawParticles() {
   for (int i = 0; i < NUM_PARTICLES; i++) {
     Particle* p = &myParticles[i]; // using a pointer to reduce typing
-  
+
     glPushMatrix();
       // draw a sphere at the origin (0,0,0) and translate it to its final position
       glTranslatef(p->pos.x / UNIVERSIZE, p->pos.y / UNIVERSIZE, p->pos.z / UNIVERSIZE);
@@ -122,7 +122,7 @@ void drawRest() {
 
 void display(void) {
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the last frame
-  
+
   glMatrixMode(GL_PROJECTION); // set up perspectives in projection view
   glLoadIdentity();
   gluPerspective(70.0, 1.0, 1.0, 10.0); // fov, apsect ratio, znear, zfar
@@ -131,11 +131,11 @@ void display(void) {
   gluLookAt(cos(viewAngle) * viewDistance, 0.0, sin(viewAngle) * viewDistance,  // origin of the camera
             0.0, 0.0, 0.0,  // coordinates the camera is looking at
             0.0, 1.0, 0.0); // the up direction
-  
+
   updateParticles(); // do the calculations on the particles
   drawParticles(); // draw the particles
   drawRest(); // draw the rest of the scene
-  
+
   glutSwapBuffers(); // finish drawing the new frame and put it on the screen
 }
 
@@ -179,14 +179,14 @@ int main(int argc, char **argv) {
   glutInit(&argc, argv); // init glut
   glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH); // double frame buffer, rgb colours, and depth detection
   glutInitWindowSize(WIDTH, HEIGHT);
-  glutCreateWindow("Dunceiam"); // title of the window
+  glutCreateWindow("N-body Gravitational Simulation"); // title of the window
   glutDisplayFunc(display); // function called to render the window
   glutIdleFunc(display); // function called when window is idle (no need to update)
   glutSpecialFunc(processSpecialKeys);
   
   init(); // set up variables
-  
+
   glutMainLoop(); // go into an infinite loop
-  
+
   return 0;
 }

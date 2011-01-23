@@ -17,14 +17,14 @@
 
 using namespace std;
 
-#define NUM_PARTICLES   2
+#define NUM_PARTICLES   10
 #define RECORDINGS      1000
-#define PER_RECORDING   10               // s
-#define TIMESTEPS       1000000          // s-1
+#define PER_RECORDING   1.0                // s
+#define TIMESTEPS       1.0                // s-1
 #define GRAV_CONSTANT   0.00000000006673 // m3 kg-1 s-2
 
-#define UNIVERSIZE      10000.0
-#define MASS            5974200000000000.0
+#define UNIVERSIZE      100000.0
+#define MASS            5974200000000000000000000.0
 
 struct Particle {
 	float3 pos;
