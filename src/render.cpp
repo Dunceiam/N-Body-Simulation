@@ -10,6 +10,10 @@
 
 #include "float3.h"
 
+#define WIDTH           800
+#define HEIGHT          800
+#define ROTATE_SPEED    0.05
+
 #define NUM_THREADS     8
 #define NUM_PARTICLES   400
 #define TIME            1                  // s   (seconds per frame)
@@ -36,6 +40,8 @@ float rand2() {
 }
 
 Particle myParticles[NUM_PARTICLES];
+float viewAngle = 0.0f;
+float viewDistance = 4.0f;
 
 void *updateParticlesThread(void *ptr) {
   int i = *((int*) ptr); // I am thread i
@@ -117,6 +123,15 @@ void drawRest() {
 void display(void) {
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the last frame
   
+  glMatrixMode(GL_PROJECTION); // set up perspectives in projection view
+  glLoadIdentity();
+  gluPerspective(70.0, 1.0, 1.0, 10.0); // fov, apsect ratio, znear, zfar
+  glMatrixMode(GL_MODELVIEW); // set up camera and the scene in model view
+  glLoadIdentity();
+  gluLookAt(cos(viewAngle) * viewDistance, 0.0, sin(viewAngle) * viewDistance,  // origin of the camera
+            0.0, 0.0, 0.0,  // coordinates the camera is looking at
+            0.0, 1.0, 0.0); // the up direction
+  
   updateParticles(); // do the calculations on the particles
   drawParticles(); // draw the particles
   drawRest(); // draw the rest of the scene
@@ -135,15 +150,6 @@ void init(void) {
   glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
   glLightfv(GL_LIGHT0, GL_POSITION, light_position);
 
-  glMatrixMode(GL_PROJECTION); // set up perspectives in projection view
-  glLoadIdentity();
-  gluPerspective(70.0, 1.0, 1.0, 10.0); // fov, apsect ratio, znear, zfar
-  glMatrixMode(GL_MODELVIEW); // set up camera and the scene in model view
-  glLoadIdentity();
-  gluLookAt(0.5, 2.5, 0.0,  // origin of the camera
-            0.0, 0.0, 0.0,  // coordinates the camera is looking at
-            0.0, 1.0, 0.0); // the up direction
-
   srand(time(NULL));
   for (int x = 0; x < NUM_PARTICLES; ++x) {
     // generate random positions from -UNIVERSIZE to UNIVERSIZE
@@ -158,12 +164,25 @@ void init(void) {
   glEnable(GL_DEPTH_TEST);
 }
 
+void processSpecialKeys(int key, int x, int y) {
+  switch(key) {
+    case GLUT_KEY_LEFT: 
+      viewAngle += ROTATE_SPEED;    
+      break;
+    case GLUT_KEY_RIGHT:
+      viewAngle -= ROTATE_SPEED;
+      break;
+  }
+}
+
 int main(int argc, char **argv) {
   glutInit(&argc, argv); // init glut
   glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH); // double frame buffer, rgb colours, and depth detection
+  glutInitWindowSize(WIDTH, HEIGHT);
   glutCreateWindow("Dunceiam"); // title of the window
   glutDisplayFunc(display); // function called to render the window
   glutIdleFunc(display); // function called when window is idle (no need to update)
+  glutSpecialFunc(processSpecialKeys);
   
   init(); // set up variables
   
