@@ -10,9 +10,6 @@
 
 #include "float3.h"
 
-#define WIDTH           800
-#define HEIGHT          800
-#define ROTATE_SPEED    0.05
 
 #define NUM_THREADS     8
 #define NUM_PARTICLES   200
@@ -39,8 +36,6 @@ float rand2() {
 }
 
 Particle myParticles[NUM_PARTICLES];
-float viewAngle = 0.0f;
-float viewDistance = 4.0f;
 
 void *updateParticlesThread(void *ptr) {
   int i = *((int*) ptr); // I am thread i
@@ -121,15 +116,6 @@ void drawRest() {
 void display(void) {
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the last frame
 
-  glMatrixMode(GL_PROJECTION); // set up perspectives in projection view
-  glLoadIdentity();
-  gluPerspective(70.0, 1.0, 1.0, 10.0); // fov, apsect ratio, znear, zfar
-  glMatrixMode(GL_MODELVIEW); // set up camera and the scene in model view
-  glLoadIdentity();
-  gluLookAt(cos(viewAngle) * viewDistance, 0.0, sin(viewAngle) * viewDistance,  // origin of the camera
-            0.0, 0.0, 0.0,  // coordinates the camera is looking at
-            0.0, 1.0, 0.0); // the up direction
-
   updateParticles(); // do the calculations on the particles
   drawParticles(); // draw the particles
   drawRest(); // draw the rest of the scene
@@ -138,50 +124,46 @@ void display(void) {
 }
 
 void init(void) {
-  GLfloat mat_specular[] = { 1.0, 1.0, 1.0, 1.0 };
-  GLfloat mat_shininess[] = { 50.0 };
-  GLfloat light_position[] = { 1.0, 1.0, 1.0, 0.0 };
-  glClearColor(0.0, 0.0, 0.0, 0.0);
-  glShadeModel(GL_SMOOTH);
+	GLfloat mat_specular[] = { 1.0, 1.0, 1.0, 1.0 };
+	GLfloat mat_shininess[] = { 50.0 };
+	GLfloat light_position[] = { 1.0, 1.0, 1.0, 0.0 };
+	glClearColor(0.0, 0.0, 0.0, 0.0);
+	glShadeModel(GL_SMOOTH);
 
-  glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
-  glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
-  glLightfv(GL_LIGHT0, GL_POSITION, light_position);
+	glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
+	glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
+	glLightfv(GL_LIGHT0, GL_POSITION, light_position);
 
-  srand(time(NULL));
-  for (int x = 0; x < NUM_PARTICLES; ++x) {
-    // generate random positions from -UNIVERSIZE to UNIVERSIZE
-    myParticles[x].pos = make_float3(rand2() * 2.0 - 1.0, rand2() * 2.0 - 1.0, rand2() * 2.0 - 1.0) * UNIVERSIZE;
-    myParticles[x].vel = make_float3(0.0);
-    myParticles[x].acl = make_float3(0.0);
-    myParticles[x].mass = MASS;
-  }
-  
-  glEnable(GL_LIGHTING);
-  glEnable(GL_LIGHT0);
-  glEnable(GL_DEPTH_TEST);
-}
+	glMatrixMode(GL_PROJECTION); // set up perspectives in projection view
+	glLoadIdentity();
+	gluPerspective(50.0, 1.777, 1.0, 10.0); // fov, apsect ratio, znear, zfar
+	glMatrixMode(GL_MODELVIEW); // set up camera and the scene in model view
+	glLoadIdentity();
+	gluLookAt(2.5, 2.0, 3.0,  // origin of the camera
+			0.0, 0.0, 0.0,  // coordinates the camera is looking at
+			0.0, 1.0, 0.0); // the up direction
 
-void processSpecialKeys(int key, int x, int y) {
-  switch(key) {
-    case GLUT_KEY_LEFT: 
-      viewAngle += ROTATE_SPEED;    
-      break;
-    case GLUT_KEY_RIGHT:
-      viewAngle -= ROTATE_SPEED;
-      break;
-  }
+	srand(time(NULL));
+	for (int x = 0; x < NUM_PARTICLES; ++x) {
+		// generate random positions from -UNIVERSIZE to UNIVERSIZE
+		myParticles[x].pos = make_float3(rand2() * 2.0 - 1.0, rand2() * 2.0 - 1.0, rand2() * 2.0 - 1.0) * UNIVERSIZE;
+		myParticles[x].vel = make_float3(0.0);
+		myParticles[x].acl = make_float3(0.0);
+		myParticles[x].mass = MASS;
+	}
+
+	glEnable(GL_LIGHTING);
+	glEnable(GL_LIGHT0);
+	glEnable(GL_DEPTH_TEST);
 }
 
 int main(int argc, char **argv) {
   glutInit(&argc, argv); // init glut
   glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH); // double frame buffer, rgb colours, and depth detection
-  glutInitWindowSize(WIDTH, HEIGHT);
   glutCreateWindow("N-body Gravitational Simulation"); // title of the window
   glutDisplayFunc(display); // function called to render the window
   glutIdleFunc(display); // function called when window is idle (no need to update)
-  glutSpecialFunc(processSpecialKeys);
-  
+
   init(); // set up variables
 
   glutMainLoop(); // go into an infinite loop
