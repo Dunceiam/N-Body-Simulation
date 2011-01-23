@@ -6,17 +6,16 @@
 #include <iostream>
 #include <stdio.h>
 #include <math.h>
-
-#include <pthread.h>
+#include <windows.h>
 
 #include "float3.h"
 
 
 #define NUM_THREADS     8
-#define NUM_PARTICLES   400
-#define TIME            1                  // s   (seconds per frame)
-#define TIMESTEPS       1               // s-1 (timesteps per time)
-#define GRAV_CONSTANT   0.00000000006673   // m3 kg-1 s-2
+#define NUM_PARTICLES   200
+#define TIME            500                	 // s   (seconds per frame)
+#define TIMESTEPS       1              		 // s-1 (timesteps per time)
+#define GRAV_CONSTANT   0.00000000006673  	 // m3 kg-1 s-2
 #define UNIVERSIZE      1000000.0            // m
 #define MASS            5974200000000000.0 	 // kg
 #define SOFTEN          1000000.0            // m (empirically derived value should be slightly more than UNIVERSIZE)
@@ -53,7 +52,6 @@ void *updateParticlesThread(void *ptr) {
         if (x != y) {
           float distance = length(p2->pos - p->pos);
           float gravity = GRAV_CONSTANT * p->mass * p2->mass / (pow(distance, 2.0) + SOFTEN * SOFTEN);
-
           p->acl += gravity * (p2->pos - p->pos) / distance; // add the force to the acceleration
         }
       }
@@ -80,7 +78,7 @@ void *updateParticlesThread(void *ptr) {
 }
 
 void updateParticles() {
-  pthread_t threads[NUM_THREADS]; // Array with all of the threads
+  HANDLE thread[NUM_THREADS]; // Array with all of the threads
   int ids[NUM_THREADS];
   
   for (int i = 0; i < NUM_THREADS; ++i) {
@@ -88,14 +86,14 @@ void updateParticles() {
     ids[i] = i;
     
     // Create each of the threads, passing in the function to call (updateParticlesThread) and the parameter (i)
-    pthread_create(&threads[i], NULL, updateParticlesThread, (void*) &ids[i]);
+    HANDLE thread = CreateThread( NULL, 0,(LPTHREAD_START_ROUTINE) updateParticlesThread, (void*) &ids[i], 0, NULL );
   }
   
   // All threads are running at full speed at this point
   
   for (int i = 0; i < NUM_THREADS; ++i) {
     // Wait for each thread to finish
-    pthread_join(threads[i], NULL);
+    WaitForSingleObject(thread[i], INFINITE);
   }
 }
 
