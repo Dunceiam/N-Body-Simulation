@@ -9,15 +9,6 @@ struct float3 {
   float z;
 };
 
-inline float fminf(float a, float b)
-{
-  return a < b ? a : b;
-}
-
-inline float fmaxf(float a, float b)
-{
-  return a < b ? a : b;
-}
 
 inline int max(int a, int b)
 {
