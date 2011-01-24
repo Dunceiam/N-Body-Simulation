@@ -10,12 +10,13 @@
 
 #include "float3.h"
 
-#define WIDTH           960
-#define HEIGHT          540
-#define ROTATE_SPEED    0.05
+#define WIDTH           1920
+#define HEIGHT          1080
+#define ROTATE_SPEED    0.01
+#define HEIGHT_SPEED    0.1
 
 #define NUM_THREADS     8
-#define NUM_PARTICLES   400
+#define NUM_PARTICLES   1000
 #define TIME            500                	 // s   (seconds per frame)
 #define TIMESTEPS       1              		 // s-1 (timesteps per time)
 #define GRAV_CONSTANT   0.00000000006673  	 // m3 kg-1 s-2
@@ -23,7 +24,7 @@
 #define MASS            5974200000000000.0 	 // kg
 #define SOFTEN          1000000.0            // m (empirically derived value should be slightly more than UNIVERSIZE)
 
-#define RADIUS          0.01   				 //best value is 0.01
+#define RADIUS          0.003   				 //best value is 0.01
 #define SLICES          8
 
 struct Particle {
@@ -39,8 +40,9 @@ float rand2() {
 }
 
 Particle myParticles[NUM_PARTICLES];
-float viewAngle = 0.0f;
-float viewDistance = 4.0f;
+float viewAngle = 1.0f;
+float viewDistance = 6.0f;
+float viewHeight = 0.3f;
 
 void *updateParticlesThread(void *ptr) {
    int i = *((int*) ptr); // I am thread i
@@ -48,8 +50,8 @@ void *updateParticlesThread(void *ptr) {
    int to = from + (NUM_PARTICLES / NUM_THREADS); // Same as (i + 1) * (PARTICLES * THREADS)
 
    for (int t2 = 0; t2 < TIMESTEPS; ++t2) {
-      for (int x = from; x < to; ++x) {
-         Particle* p = &myParticles[x]; // using a pointer to reduce typing
+         for (int x = from; x < to; ++x) {
+               Particle* p = &myParticles[x]; // using a pointer to reduce typing
                p->acl = make_float3(0.0); // set acl to 0
 
                for (int y = 0; y < NUM_PARTICLES; ++y) {
@@ -74,9 +76,9 @@ void *updateParticlesThread(void *ptr) {
                p->pos += vel * deltat + 0.5 * p->acl * pow(deltat, 2.0);
 
                // if the position is outside the bounds AND the position and velocity have the same sign (so the velocity is taking the object outside the box), then flip the velocity sign
-               /*if (abs(p->pos.x) > UNIVERSIZE && p->pos.x / p->vel.x > 0.0) { p->vel.x = -p->vel.x; }
-      if (abs(p->pos.y) > UNIVERSIZE && p->pos.y / p->vel.y > 0.0) { p->vel.y = -p->vel.y; }
-      if (abs(p->pos.z) > UNIVERSIZE && p->pos.z / p->vel.z > 0.0) { p->vel.z = -p->vel.z; }*/
+          /*     if (abs(p->pos.x) > UNIVERSIZE && p->pos.x / p->vel.x > 0.0) { p->vel.x = -p->vel.x; }
+               if (abs(p->pos.y) > UNIVERSIZE && p->pos.y / p->vel.y > 0.0) { p->vel.y = -p->vel.y; }
+               if (abs(p->pos.z) > UNIVERSIZE && p->pos.z / p->vel.z > 0.0) { p->vel.z = -p->vel.z; } */
          }
    }
    return 0;
@@ -120,7 +122,13 @@ void drawRest() {
 
 void display(void) {
    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the last frame
-
+   glLoadIdentity();
+      gluPerspective(50.0, 1.777, 0.1, 10.0); // fov, apsect ratio, znear, zfar
+      glMatrixMode(GL_MODELVIEW); // set up camera and the scene in model view
+      glLoadIdentity();
+      gluLookAt(cos(viewAngle) * viewDistance, tan(viewHeight) * viewDistance, sin(viewAngle) * viewDistance,  // origin of the camera
+            0.0, 0.0, 0.0,  // coordinates the camera is looking at
+            0.0, 1.0, 0.0); // the up direction
    updateParticles(); // do the calculations on the particles
    drawParticles(); // draw the particles
    drawRest(); // draw the rest of the scene
@@ -140,13 +148,6 @@ void init(void) {
    glLightfv(GL_LIGHT0, GL_POSITION, light_position);
 
    glMatrixMode(GL_PROJECTION); // set up perspectives in projection view
-   glLoadIdentity();
-   gluPerspective(50.0, 1.777, 1.0, 10.0); // fov, apsect ratio, znear, zfar
-   glMatrixMode(GL_MODELVIEW); // set up camera and the scene in model view
-   glLoadIdentity();
-   gluLookAt(cos(viewAngle) * viewDistance, 0.0, sin(viewAngle) * viewDistance,  // origin of the camera
-               0.0, 0.0, 0.0,  // coordinates the camera is looking at
-               0.0, 1.0, 0.0); // the up direction
 
    srand(time(NULL));
    for (int x = 0; x < NUM_PARTICLES; ++x) {
@@ -162,15 +163,33 @@ void init(void) {
    glEnable(GL_DEPTH_TEST);
 }
 
+void processMouseWheel(int button, int dir, int x, int y)
+{
+    if (dir > 0) {
+        viewDistance -= HEIGHT_SPEED;
+    }
+    else {
+        viewDistance += HEIGHT_SPEED;
+    }
+    return;
+}
+
 void processSpecialKeys(int key, int x, int y) {
-  switch(key) {
-    case GLUT_KEY_LEFT:
+   switch(key) {
+   case GLUT_KEY_LEFT:
       viewAngle += ROTATE_SPEED;
       break;
-    case GLUT_KEY_RIGHT:
+   case GLUT_KEY_RIGHT:
       viewAngle -= ROTATE_SPEED;
       break;
-  }
+   case GLUT_KEY_UP:
+      viewHeight += ROTATE_SPEED;
+      break;
+   case GLUT_KEY_DOWN:
+      viewHeight -= ROTATE_SPEED;
+      break;
+   }
+   glutMouseWheelFunc(processMouseWheel);
 }
 
 int main(int argc, char **argv) {
@@ -181,6 +200,7 @@ int main(int argc, char **argv) {
    glutDisplayFunc(display); // function called to render the window
    glutIdleFunc(display); // function called when window is idle (no need to update)
    glutSpecialFunc(processSpecialKeys);
+   glutMouseWheelFunc(processMouseWheel);
    init(); // set up variables
    glutMainLoop(); // go into an infinite loop
    return 0;
