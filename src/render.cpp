@@ -17,12 +17,14 @@
 
 #define NUM_THREADS     8
 #define NUM_PARTICLES   1000
-#define TIME            500                	 // s   (seconds per frame)
+#define TIME            86400                 // s   (seconds per frame)
 #define TIMESTEPS       1              		 // s-1 (timesteps per time)
 #define GRAV_CONSTANT   0.00000000006673  	 // m3 kg-1 s-2
-#define UNIVERSIZE      1000000.0            // m
-#define MASS            5974200000000000.0 	 // kg
-#define SOFTEN          1000000.0            // m (empirically derived value should be slightly more than UNIVERSIZE)
+#define UNIVERSIZE      1000000000000.0            // km
+#define MASS            99446000000000000000000000000.0 	 // kg
+#define VARMASS         198892000000000000000000000000.0;
+#define VARVELOCITY     10000.0
+#define SOFTEN          1000000000000.0            // km (empirically derived value should be slightly more than UNIVERSIZE)
 
 #define RADIUS          0.003   				 //best value is 0.01
 #define SLICES          8
@@ -34,14 +36,19 @@ struct Particle {
    float mass;
 };
 
+using namespace std;
+
 // Generates random float from 0.0 to 1.0
 float rand2() {
-   return (float) rand() / (float) RAND_MAX;
+   float temp = (float) rand() / (float) RAND_MAX;
+   if(temp == 0.0)
+      rand2();
+   return temp;
 }
 
 Particle myParticles[NUM_PARTICLES];
 float viewAngle = 1.0f;
-float viewDistance = 6.0f;
+float viewDistance = 4.8f;
 float viewHeight = 0.3f;
 
 void *updateParticlesThread(void *ptr) {
@@ -123,7 +130,7 @@ void drawRest() {
 void display(void) {
    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the last frame
    glLoadIdentity();
-      gluPerspective(50.0, 1.777, 0.1, 10.0); // fov, apsect ratio, znear, zfar
+      gluPerspective(50.0, 1.777, 0.01, 10.0); // fov, apsect ratio, znear, zfar
       glMatrixMode(GL_MODELVIEW); // set up camera and the scene in model view
       glLoadIdentity();
       gluLookAt(cos(viewAngle) * viewDistance, tan(viewHeight) * viewDistance, sin(viewAngle) * viewDistance,  // origin of the camera
@@ -148,15 +155,7 @@ void init(void) {
    glLightfv(GL_LIGHT0, GL_POSITION, light_position);
 
    glMatrixMode(GL_PROJECTION); // set up perspectives in projection view
-
    srand(time(NULL));
-   for (int x = 0; x < NUM_PARTICLES; ++x) {
-         // generate random positions from -UNIVERSIZE to UNIVERSIZE
-         myParticles[x].pos = make_float3(rand2() * 2.0 - 1.0, rand2() * 2.0 - 1.0, rand2() * 2.0 - 1.0) * UNIVERSIZE;
-         myParticles[x].vel = make_float3(0.0);
-         myParticles[x].acl = make_float3(0.0);
-         myParticles[x].mass = MASS;
-   }
 
    glEnable(GL_LIGHTING);
    glEnable(GL_LIGHT0);
@@ -192,7 +191,154 @@ void processSpecialKeys(int key, int x, int y) {
    glutMouseWheelFunc(processMouseWheel);
 }
 
+void menu(void) {
+   int option, perpendic = 0;
+   cout << " 0. Horizontal Disk\n";
+   cout << " 1. Horizontal Disk w/ Velocity\n";
+   cout << " 2. Horizontal Disk (Variable Mass)\n";
+   cout << " 3. Horizontal Disk w/ Velocity (Variable Mass)\n";
+   cout << " 4. Horizontal + Vertical Disk\n";
+   cout << " 5. Horizontal + Vertical Disk w/ Velocity \n";
+   cout << " 6. Horizontal + Vertical Disk (Variable Mass)\n";
+   cout << " 7. Horizontal + Vertical Disk w/ Velocity (Variable Mass)\n";
+   cout << " 8. Random\n";
+   cout << " 9. Random w/ Velocity\n";
+   cout << "10. Random w/ Velocity (Variable Mass)\n";
+   cout << "Option: ";
+   cin >> option;
+   switch(option) {
+   case 0:
+      for (int x = 0; x < NUM_PARTICLES; ++x) {
+            myParticles[x].pos = make_float3((rand2() * 2.0 - 1.0)* UNIVERSIZE, (rand2() * 2.0 - 1.0)* UNIVERSIZE/10, (rand2() * 2.0 - 1.0)* UNIVERSIZE);
+            myParticles[x].vel = make_float3(0.0);
+            myParticles[x].acl = make_float3(0.0);
+            myParticles[x].mass = MASS;
+      }
+      break;
+   case 2:
+      for (int x = 0; x < NUM_PARTICLES; ++x) {
+            myParticles[x].pos = make_float3((rand2() * 2.0 - 1.0)* UNIVERSIZE, (rand2() * 2.0 - 1.0)* UNIVERSIZE/10, (rand2() * 2.0 - 1.0)* UNIVERSIZE);
+            myParticles[x].vel = make_float3(0.0);
+            myParticles[x].acl = make_float3(0.0);
+            myParticles[x].mass = rand2() * VARMASS;
+      }
+      break;
+   case 4:
+      for (int x = 0; x < NUM_PARTICLES; ++x) {
+            if(perpendic == 0) {
+                  myParticles[x].pos = make_float3((rand2() * 2.0 - 1.0)* UNIVERSIZE, (rand2() * 2.0 - 1.0)* UNIVERSIZE/10, (rand2() * 2.0 - 1.0)* UNIVERSIZE); //flat
+                  myParticles[x].vel = make_float3(0.0);
+                  myParticles[x].acl = make_float3(0.0);
+                  myParticles[x].mass = MASS;
+                  perpendic = 1;
+            }
+            else {
+                  myParticles[x].pos = make_float3((rand2() * 2.0 - 1.0)* UNIVERSIZE/10, (rand2() * 2.0 - 1.0)* UNIVERSIZE , (rand2() * 2.0 - 1.0)* UNIVERSIZE);  //tall
+                  myParticles[x].vel = make_float3(0.0);
+                  myParticles[x].acl = make_float3(0.0);
+                  myParticles[x].mass = MASS;
+                  perpendic = 0;
+            }
+      }
+   case 6:
+      for (int x = 0; x < NUM_PARTICLES; ++x) {
+            if(perpendic == 0) {
+                  myParticles[x].pos = make_float3((rand2() * 2.0 - 1.0)* UNIVERSIZE, (rand2() * 2.0 - 1.0)* UNIVERSIZE/10, (rand2() * 2.0 - 1.0)* UNIVERSIZE); //flat
+                  myParticles[x].vel = make_float3(0.0);
+                  myParticles[x].acl = make_float3(0.0);
+                  myParticles[x].mass = rand2() * VARMASS;
+                  perpendic = 1;
+            }
+            else {
+                  myParticles[x].pos = make_float3((rand2() * 2.0 - 1.0)* UNIVERSIZE/10, (rand2() * 2.0 - 1.0)* UNIVERSIZE , (rand2() * 2.0 - 1.0)* UNIVERSIZE);  //tall
+                  myParticles[x].vel = make_float3(0.0);
+                  myParticles[x].acl = make_float3(0.0);
+                  myParticles[x].mass = rand2() * VARMASS;
+                  perpendic = 0;
+            }
+      }
+      break;
+   case 1:
+      for (int x = 0; x < NUM_PARTICLES; ++x) {
+            myParticles[x].pos = make_float3((rand2() * 2.0 - 1.0)* UNIVERSIZE, (rand2() * 2.0 - 1.0)* UNIVERSIZE/10, (rand2() * 2.0 - 1.0)* UNIVERSIZE);
+            myParticles[x].vel = make_float3((rand2() * 2.0 - 1.0) * VARVELOCITY, 0.0, (rand2() * 2.0 - 1.0) * VARVELOCITY);
+            myParticles[x].acl = make_float3(0.0);
+            myParticles[x].mass = MASS;
+      }
+      break;
+   case 3:
+      for (int x = 0; x < NUM_PARTICLES; ++x) {
+            myParticles[x].pos = make_float3((rand2() * 2.0 - 1.0)* UNIVERSIZE, (rand2() * 2.0 - 1.0)* UNIVERSIZE/10, (rand2() * 2.0 - 1.0)* UNIVERSIZE);
+            myParticles[x].vel = make_float3((rand2() * 2.0 - 1.0) * VARVELOCITY, 0.0, (rand2() * 2.0 - 1.0) * VARVELOCITY);
+            myParticles[x].acl = make_float3(0.0);
+            myParticles[x].mass = rand2() * VARMASS;
+      }
+      break;
+   case 5:
+      for (int x = 0; x < NUM_PARTICLES; ++x) {
+            if(perpendic == 0) {
+                  myParticles[x].pos = make_float3((rand2() * 2.0 - 1.0)* UNIVERSIZE, (rand2() * 2.0 - 1.0)* UNIVERSIZE/10, (rand2() * 2.0 - 1.0)* UNIVERSIZE); //flat
+                  myParticles[x].vel = make_float3((rand2() * 2.0 - 1.0) * VARVELOCITY, 0.0, (rand2() * 2.0 - 1.0) * VARVELOCITY);
+                  myParticles[x].acl = make_float3(0.0);
+                  myParticles[x].mass = MASS;
+                  perpendic = 1;
+            }
+            else {
+                  myParticles[x].pos = make_float3((rand2() * 2.0 - 1.0)* UNIVERSIZE/10, (rand2() * 2.0 - 1.0)* UNIVERSIZE , (rand2() * 2.0 - 1.0)* UNIVERSIZE);  //tall
+                  myParticles[x].vel = make_float3(0.0, (rand2() * 2.0 - 1.0) * VARVELOCITY, (rand2() * 2.0 - 1.0) * VARVELOCITY);
+                  myParticles[x].acl = make_float3(0.0);
+                  myParticles[x].mass = MASS;
+                  perpendic = 0;
+            }
+      }
+      break;
+   case 7:
+      for (int x = 0; x < NUM_PARTICLES; ++x) {
+            if(perpendic == 0) {
+                  myParticles[x].pos = make_float3((rand2() * 2.0 - 1.0)* UNIVERSIZE, (rand2() * 2.0 - 1.0)* UNIVERSIZE/10, (rand2() * 2.0 - 1.0)* UNIVERSIZE); //flat
+                  myParticles[x].vel = make_float3((rand2() * 2.0 - 1.0) * VARVELOCITY, 0.0, (rand2() * 2.0 - 1.0) * VARVELOCITY);
+                  myParticles[x].acl = make_float3(0.0);
+                  myParticles[x].mass = rand2() * VARMASS;
+                  perpendic = 1;
+            }
+            else {
+                  myParticles[x].pos = make_float3((rand2() * 2.0 - 1.0)* UNIVERSIZE/10, (rand2() * 2.0 - 1.0)* UNIVERSIZE , (rand2() * 2.0 - 1.0)* UNIVERSIZE);  //tall
+                  myParticles[x].vel = make_float3(0.0, (rand2() * 2.0 - 1.0) * VARVELOCITY, (rand2() * 2.0 - 1.0) * VARVELOCITY);
+                  myParticles[x].acl = make_float3(0.0);
+                  myParticles[x].mass = rand2() * VARMASS;
+                  perpendic = 0;
+            }
+      }
+      break;
+   case 8:
+      for (int x = 0; x < NUM_PARTICLES; ++x) {
+            myParticles[x].pos = make_float3(rand2() * 2.0 - 1.0, rand2() * 2.0 - 1.0, rand2() * 2.0 - 1.0) * UNIVERSIZE;
+            myParticles[x].vel = make_float3(0.0);
+            myParticles[x].acl = make_float3(0.0);
+            myParticles[x].mass = MASS;
+      }
+      break;
+   case 9:
+      for (int x = 0; x < NUM_PARTICLES; ++x) {
+            myParticles[x].pos = make_float3(rand2() * 2.0 - 1.0, rand2() * 2.0 - 1.0, rand2() * 2.0 - 1.0) * UNIVERSIZE;
+            myParticles[x].vel = make_float3(rand2() * 2.0 - 1.0, rand2() * 2.0 - 1.0, rand2() * 2.0 - 1.0) * VARVELOCITY;
+            myParticles[x].acl = make_float3(0.0);
+            myParticles[x].mass = MASS;
+      }
+      break;
+   case 10:
+      for (int x = 0; x < NUM_PARTICLES; ++x) {
+            myParticles[x].pos = make_float3(rand2() * 2.0 - 1.0, rand2() * 2.0 - 1.0, rand2() * 2.0 - 1.0) * UNIVERSIZE;
+            myParticles[x].vel = make_float3(rand2() * 2.0 - 1.0, rand2() * 2.0 - 1.0, rand2() * 2.0 - 1.0) * VARVELOCITY;
+            myParticles[x].acl = make_float3(0.0);
+            myParticles[x].mass = rand2() * VARMASS;
+      }
+      break;
+   }
+}
+
 int main(int argc, char **argv) {
+   menu();
    glutInit(&argc, argv); // init glut
    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH); // double frame buffer, rgb colours, and depth detection
    glutInitWindowSize(WIDTH, HEIGHT);
