@@ -269,7 +269,10 @@ void menu(void) {
                         myParticles[x].vel = make_float3(vxrand? (rand2()) * VARVELOCITY :(rand2() - 1.0) * VARVELOCITY, 0.0,vzrand? (rand2()) * VARVELOCITY :(rand2() - 1.0) * VARVELOCITY);
                      else
                         myParticles[x].vel = make_float3(0.0);
-                     myParticles[x].mass = massrand ? (rand2() * VARMASS) : MASS;
+                     if(massrand)
+                        myParticles[x].mass = rand2() * VARMASS;
+                     if(massrand == false)
+                        myParticles[x].mass = MASS;
                      myParticles[x].acl = make_float3(0.0);
                      switcher = 1;
                }
@@ -291,7 +294,10 @@ void menu(void) {
                         myParticles[x].vel = make_float3(0.0, vyrand? (rand2()) * VARVELOCITY :(rand2() - 1.0) * VARVELOCITY, vzrand? (rand2()) * VARVELOCITY :(rand2() - 1.0) * VARVELOCITY);
                      else
                         myParticles[x].vel = make_float3(0.0);
-                     myParticles[x].mass = massrand ? rand2()*VARMASS : MASS;
+                     if(massrand)
+                        myParticles[x].mass = rand2() * VARMASS;
+                     if(massrand == false)
+                        myParticles[x].mass = MASS;
                      myParticles[x].acl = make_float3(0.0);
                      switcher = 0;
                }
@@ -316,7 +322,10 @@ void menu(void) {
                   myParticles[x].vel = make_float3(vxrand? (rand2()) * VARVELOCITY :(rand2() - 1.0) * VARVELOCITY, 0.0,vzrand? (rand2()) * VARVELOCITY :(rand2() - 1.0) * VARVELOCITY);
                else
                   myParticles[x].vel = make_float3(0.0);
-               myParticles[x].mass = massrand? rand2()*VARMASS :MASS;
+               if(massrand)
+                  myParticles[x].mass = rand2() * VARMASS;
+               if(massrand == false)
+                  myParticles[x].mass = MASS;
                myParticles[x].acl = make_float3(0.0);
          }
    }
