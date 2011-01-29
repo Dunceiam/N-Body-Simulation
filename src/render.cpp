@@ -17,13 +17,13 @@
 
 #define NUM_THREADS     8
 #define NUM_PARTICLES   1000
-#define TIME            86400                 // s   (seconds per frame)
+#define TIME            250000                 // s   (seconds per frame)
 #define TIMESTEPS       1              		 // s-1 (timesteps per time)
 #define GRAV_CONSTANT   0.00000000006673  	 // m3 kg-1 s-2
 #define UNIVERSIZE      1000000000000.0            // 1 trillion km
 #define MASS            99446000000000000000000000000.0 	 // half mass of the sun kg
 #define VARMASS         198892000000000000000000000000.0;        // mass of the sun kg
-#define VARVELOCITY     100000.0
+#define VARVELOCITY     25000.0
 #define SOFTEN          1000000000000.0            // km (empirically derived value should be slightly more than UNIVERSIZE)
 
 #define RADIUS          0.003   				 //best value is 0.01
@@ -253,39 +253,45 @@ void menu(void) {
          for(int x = 0; x < NUM_PARTICLES; ++x) {
                if(switcher == 0) {
                      xrand = true, yrand = false, zrand = true;
-                     myParticles[x].pos = make_float3(xrand? (rand2() * 2.0 - 1.0)* UNIVERSIZE :(rand2() * 2.0 - 1.0)* UNIVERSIZE/10, yrand? (rand2() * 2.0 - 1.0)* UNIVERSIZE :(rand2() * 2.0 - 1.0)* UNIVERSIZE/10, zrand? (rand2() * 2.0 - 1.0)* UNIVERSIZE :(rand2() * 2.0 - 1.0)* UNIVERSIZE/10);
+                     float r = rand2()*UNIVERSIZE;
+                     float angle = rand2()*3.14;
+                     float angle2 = rand2()*6.28;
+                     myParticles[x].pos = make_float3(xrand? sin(angle)*cos(angle2)*r :(sin(angle)*cos(angle2)*r)/10, yrand? sin(angle)*sin(angle2)*r :(sin(angle)*sin(angle2)*r)/10, zrand? cos(angle)*r :(cos(angle)*r)/10);
                      if((myParticles[x].pos.x > 0) && (myParticles[x].pos.z < 0))
-                        vxrand = true, vzrand = true;
-                     if((myParticles[x].pos.x > 0) && (myParticles[x].pos.z > 0))
-                        vxrand = false, vzrand = true;
-                     if((myParticles[x].pos.x < 0) && (myParticles[x].pos.z > 0))
                         vxrand = false, vzrand = false;
-                     else
+                     else if((myParticles[x].pos.x > 0) && (myParticles[x].pos.z > 0))
                         vxrand = true, vzrand = false;
+                     else if((myParticles[x].pos.x < 0) && (myParticles[x].pos.z > 0))
+                        vxrand = true, vzrand = true;
+                     else if((myParticles[x].pos.x < 0) && (myParticles[x].pos.z < 0))
+                        vxrand = false, vzrand = true;
                      if(velocity)
                         myParticles[x].vel = make_float3(vxrand? (rand2()) * VARVELOCITY :(rand2() - 1.0) * VARVELOCITY, 0.0,vzrand? (rand2()) * VARVELOCITY :(rand2() - 1.0) * VARVELOCITY);
                      else
                         myParticles[x].vel = make_float3(0.0);
-                     myParticles[x].mass = massrand? rand2()* UNIVERSIZE :MASS;
+                     myParticles[x].mass = massrand ? (rand2() * VARMASS) : MASS;
                      myParticles[x].acl = make_float3(0.0);
                      switcher = 1;
                }
                else {
                      xrand = false; yrand = true, zrand = true;
-                     myParticles[x].pos = make_float3(xrand? (rand2() * 2.0 - 1.0)* UNIVERSIZE :(rand2() * 2.0 - 1.0)* UNIVERSIZE/10, yrand? (rand2() * 2.0 - 1.0)* UNIVERSIZE :(rand2() * 2.0 - 1.0)* UNIVERSIZE/10, zrand? (rand2() * 2.0 - 1.0)* UNIVERSIZE :(rand2() * 2.0 - 1.0)* UNIVERSIZE/10);
+                     float r = rand2()*UNIVERSIZE;
+                     float angle = rand2()*3.14;
+                     float angle2 = rand2()*6.28;
+                     myParticles[x].pos = make_float3(xrand? sin(angle)*cos(angle2)*r :(sin(angle)*cos(angle2)*r)/10, yrand? sin(angle)*sin(angle2)*r :(sin(angle)*sin(angle2)*r)/10, zrand? cos(angle)*r :(cos(angle)*r)/10);
                      if((myParticles[x].pos.y > 0) && (myParticles[x].pos.z < 0))
-                        vyrand = false, vzrand = false;
-                     if((myParticles[x].pos.y > 0) && (myParticles[x].pos.z > 0))
+                        vyrand = true, vzrand = true;
+                     else if((myParticles[x].pos.y > 0) && (myParticles[x].pos.z > 0))
                         vyrand = false, vzrand = true;
-                     if((myParticles[x].pos.y < 0) && (myParticles[x].pos.z > 0))
+                     else if((myParticles[x].pos.y < 0) && (myParticles[x].pos.z > 0))
                         vyrand = false, vzrand = false;
-                     else
+                     else if((myParticles[x].pos.y < 0) && (myParticles[x].pos.z < 0))
                         vyrand = true, vzrand = false;
                      if(velocity)
                         myParticles[x].vel = make_float3(0.0, vyrand? (rand2()) * VARVELOCITY :(rand2() - 1.0) * VARVELOCITY, vzrand? (rand2()) * VARVELOCITY :(rand2() - 1.0) * VARVELOCITY);
                      else
                         myParticles[x].vel = make_float3(0.0);
-                     myParticles[x].mass = massrand? rand2()* UNIVERSIZE :MASS;
+                     myParticles[x].mass = massrand ? rand2()*VARMASS : MASS;
                      myParticles[x].acl = make_float3(0.0);
                      switcher = 0;
                }
@@ -293,20 +299,24 @@ void menu(void) {
    }
    else {
          for (int x = 0; x < NUM_PARTICLES; ++x) {
-               myParticles[x].pos = make_float3(xrand? (rand2() * 2.0 - 1.0)* UNIVERSIZE :(rand2() * 2.0 - 1.0)* UNIVERSIZE/10, yrand? (rand2() * 2.0 - 1.0)* UNIVERSIZE :(rand2() * 2.0 - 1.0)* UNIVERSIZE/10, zrand? (rand2() * 2.0 - 1.0)* UNIVERSIZE :(rand2() * 2.0 - 1.0)* UNIVERSIZE/10);
-               if((myParticles[x].pos.x > 0) && (myParticles[x].pos.z < 0))                                      //back-left corner is false false
-                  vxrand = false, vzrand = false; //vxrand = false, vzrand = false;                              //close-right corner is true true
-               if((myParticles[x].pos.x > 0) && (myParticles[x].pos.z > 0))                                      //back-right corner is true false
-                  vxrand = false, vzrand = false;  //vxrand = true, vzrand = false;                              //close-left corner is false true
-               if((myParticles[x].pos.x < 0) && (myParticles[x].pos.z > 0))                                      //neg x is to the left
-                  vxrand = false, vzrand = false;  //vxrand = true, vzrand = false;                              //pos z is close to me
-               else
-                  vxrand = true, vzrand = true;  //vxrand = false, vzrand = true;
+          //     myParticles[x].pos = make_float3(xrand? (rand2() * 2.0 - 1.0)* UNIVERSIZE :(rand2() * 2.0 - 1.0)* UNIVERSIZE/10, yrand? (rand2() * 2.0 - 1.0)* UNIVERSIZE :(rand2() * 2.0 - 1.0)* UNIVERSIZE/10, zrand? (rand2() * 2.0 - 1.0)* UNIVERSIZE :(rand2() * 2.0 - 1.0)* UNIVERSIZE/10);
+               float r = rand2()*UNIVERSIZE;
+               float angle = rand2()*3.14;
+               float angle2 = rand2()*6.28;
+               myParticles[x].pos = make_float3(xrand? sin(angle)*cos(angle2)*r :(sin(angle)*cos(angle2)*r)/10, yrand? sin(angle)*sin(angle2)*r :(sin(angle)*sin(angle2)*r)/10, zrand? cos(angle)*r :(cos(angle)*r)/10);
+               if((myParticles[x].pos.x > 0) && (myParticles[x].pos.z < 0))                  //back-left corner is false false
+                  vxrand = false, vzrand = false;                                            //close-right corner is true true
+               else if((myParticles[x].pos.x > 0) && (myParticles[x].pos.z > 0))             //back-right corner is true false
+                  vxrand = true, vzrand = false;                                             //close-left corner is false true
+               else if((myParticles[x].pos.x < 0) && (myParticles[x].pos.z > 0))             //neg x is to the left
+                  vxrand = true, vzrand = true;                                              //pos z is close to me
+               else if((myParticles[x].pos.x < 0) && (myParticles[x].pos.z < 0))
+                  vxrand = false, vzrand = true;
                if(velocity)
                   myParticles[x].vel = make_float3(vxrand? (rand2()) * VARVELOCITY :(rand2() - 1.0) * VARVELOCITY, 0.0,vzrand? (rand2()) * VARVELOCITY :(rand2() - 1.0) * VARVELOCITY);
                else
                   myParticles[x].vel = make_float3(0.0);
-               myParticles[x].mass = massrand? rand2()* UNIVERSIZE :MASS;
+               myParticles[x].mass = massrand? rand2()*VARMASS :MASS;
                myParticles[x].acl = make_float3(0.0);
          }
    }
