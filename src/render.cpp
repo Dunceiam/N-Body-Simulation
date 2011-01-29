@@ -20,10 +20,10 @@
 #define TIME            86400                 // s   (seconds per frame)
 #define TIMESTEPS       1              		 // s-1 (timesteps per time)
 #define GRAV_CONSTANT   0.00000000006673  	 // m3 kg-1 s-2
-#define UNIVERSIZE      1000000000000.0            // km
-#define MASS            99446000000000000000000000000.0 	 // kg
-#define VARMASS         198892000000000000000000000000.0;
-#define VARVELOCITY     10000.0
+#define UNIVERSIZE      1000000000000.0            // 1 trillion km
+#define MASS            99446000000000000000000000000.0 	 // half mass of the sun kg
+#define VARMASS         198892000000000000000000000000.0;        // mass of the sun kg
+#define VARVELOCITY     100000.0
 #define SOFTEN          1000000000000.0            // km (empirically derived value should be slightly more than UNIVERSIZE)
 
 #define RADIUS          0.003   				 //best value is 0.01
@@ -192,7 +192,7 @@ void processSpecialKeys(int key, int x, int y) {
 }
 
 void menu(void) {
-   int option, perpendic = 0;
+   int option = 0;
    cout << " 0. Horizontal Disk\n";
    cout << " 1. Horizontal Disk w/ Velocity\n";
    cout << " 2. Horizontal Disk (Variable Mass)\n";
@@ -206,134 +206,109 @@ void menu(void) {
    cout << "10. Random w/ Velocity (Variable Mass)\n";
    cout << "Option: ";
    cin >> option;
+
+ //  DEFAULT = pos(rand, rand, rand)
+ //          = vel(rand, rand, rand)
+ //          = mass(rand), perpendic?
+   bool xrand = true, yrand = true, zrand = true;
+   bool vxrand = true, vzrand = true, vyrand = true, velocity = false;
+   bool massrand = true, perp = false;
    switch(option) {
    case 0:
-      for (int x = 0; x < NUM_PARTICLES; ++x) {
-            myParticles[x].pos = make_float3((rand2() * 2.0 - 1.0)* UNIVERSIZE, (rand2() * 2.0 - 1.0)* UNIVERSIZE/10, (rand2() * 2.0 - 1.0)* UNIVERSIZE);
-            myParticles[x].vel = make_float3(0.0);
-            myParticles[x].acl = make_float3(0.0);
-            myParticles[x].mass = MASS;
-      }
+      massrand = false, yrand = false;
       break;
    case 2:
-      for (int x = 0; x < NUM_PARTICLES; ++x) {
-            myParticles[x].pos = make_float3((rand2() * 2.0 - 1.0)* UNIVERSIZE, (rand2() * 2.0 - 1.0)* UNIVERSIZE/10, (rand2() * 2.0 - 1.0)* UNIVERSIZE);
-            myParticles[x].vel = make_float3(0.0);
-            myParticles[x].acl = make_float3(0.0);
-            myParticles[x].mass = rand2() * VARMASS;
-      }
+      yrand = false;
       break;
    case 4:
-      for (int x = 0; x < NUM_PARTICLES; ++x) {
-            if(perpendic == 0) {
-                  myParticles[x].pos = make_float3((rand2() * 2.0 - 1.0)* UNIVERSIZE, (rand2() * 2.0 - 1.0)* UNIVERSIZE/10, (rand2() * 2.0 - 1.0)* UNIVERSIZE); //flat
-                  myParticles[x].vel = make_float3(0.0);
-                  myParticles[x].acl = make_float3(0.0);
-                  myParticles[x].mass = MASS;
-                  perpendic = 1;
-            }
-            else {
-                  myParticles[x].pos = make_float3((rand2() * 2.0 - 1.0)* UNIVERSIZE/10, (rand2() * 2.0 - 1.0)* UNIVERSIZE , (rand2() * 2.0 - 1.0)* UNIVERSIZE);  //tall
-                  myParticles[x].vel = make_float3(0.0);
-                  myParticles[x].acl = make_float3(0.0);
-                  myParticles[x].mass = MASS;
-                  perpendic = 0;
-            }
-      }
+      perp = true, massrand = false;
+      break;
    case 6:
-      for (int x = 0; x < NUM_PARTICLES; ++x) {
-            if(perpendic == 0) {
-                  myParticles[x].pos = make_float3((rand2() * 2.0 - 1.0)* UNIVERSIZE, (rand2() * 2.0 - 1.0)* UNIVERSIZE/10, (rand2() * 2.0 - 1.0)* UNIVERSIZE); //flat
-                  myParticles[x].vel = make_float3(0.0);
-                  myParticles[x].acl = make_float3(0.0);
-                  myParticles[x].mass = rand2() * VARMASS;
-                  perpendic = 1;
-            }
-            else {
-                  myParticles[x].pos = make_float3((rand2() * 2.0 - 1.0)* UNIVERSIZE/10, (rand2() * 2.0 - 1.0)* UNIVERSIZE , (rand2() * 2.0 - 1.0)* UNIVERSIZE);  //tall
-                  myParticles[x].vel = make_float3(0.0);
-                  myParticles[x].acl = make_float3(0.0);
-                  myParticles[x].mass = rand2() * VARMASS;
-                  perpendic = 0;
-            }
-      }
+      perp = true;
       break;
    case 1:
-      for (int x = 0; x < NUM_PARTICLES; ++x) {
-            myParticles[x].pos = make_float3((rand2() * 2.0 - 1.0)* UNIVERSIZE, (rand2() * 2.0 - 1.0)* UNIVERSIZE/10, (rand2() * 2.0 - 1.0)* UNIVERSIZE);
-            myParticles[x].vel = make_float3((rand2() * 2.0 - 1.0) * VARVELOCITY, 0.0, (rand2() * 2.0 - 1.0) * VARVELOCITY);
-            myParticles[x].acl = make_float3(0.0);
-            myParticles[x].mass = MASS;
-      }
+      yrand = false, massrand = false, velocity = true;
       break;
    case 3:
-      for (int x = 0; x < NUM_PARTICLES; ++x) {
-            myParticles[x].pos = make_float3((rand2() * 2.0 - 1.0)* UNIVERSIZE, (rand2() * 2.0 - 1.0)* UNIVERSIZE/10, (rand2() * 2.0 - 1.0)* UNIVERSIZE);
-            myParticles[x].vel = make_float3((rand2() * 2.0 - 1.0) * VARVELOCITY, 0.0, (rand2() * 2.0 - 1.0) * VARVELOCITY);
-            myParticles[x].acl = make_float3(0.0);
-            myParticles[x].mass = rand2() * VARMASS;
-      }
+      yrand = false, velocity = true;
       break;
    case 5:
-      for (int x = 0; x < NUM_PARTICLES; ++x) {
-            if(perpendic == 0) {
-                  myParticles[x].pos = make_float3((rand2() * 2.0 - 1.0)* UNIVERSIZE, (rand2() * 2.0 - 1.0)* UNIVERSIZE/10, (rand2() * 2.0 - 1.0)* UNIVERSIZE); //flat
-                  myParticles[x].vel = make_float3((rand2() * 2.0 - 1.0) * VARVELOCITY, 0.0, (rand2() * 2.0 - 1.0) * VARVELOCITY);
-                  myParticles[x].acl = make_float3(0.0);
-                  myParticles[x].mass = MASS;
-                  perpendic = 1;
-            }
-            else {
-                  myParticles[x].pos = make_float3((rand2() * 2.0 - 1.0)* UNIVERSIZE/10, (rand2() * 2.0 - 1.0)* UNIVERSIZE , (rand2() * 2.0 - 1.0)* UNIVERSIZE);  //tall
-                  myParticles[x].vel = make_float3(0.0, (rand2() * 2.0 - 1.0) * VARVELOCITY, (rand2() * 2.0 - 1.0) * VARVELOCITY);
-                  myParticles[x].acl = make_float3(0.0);
-                  myParticles[x].mass = MASS;
-                  perpendic = 0;
-            }
-      }
+      perp = true, massrand = false, velocity = true;
       break;
    case 7:
-      for (int x = 0; x < NUM_PARTICLES; ++x) {
-            if(perpendic == 0) {
-                  myParticles[x].pos = make_float3((rand2() * 2.0 - 1.0)* UNIVERSIZE, (rand2() * 2.0 - 1.0)* UNIVERSIZE/10, (rand2() * 2.0 - 1.0)* UNIVERSIZE); //flat
-                  myParticles[x].vel = make_float3((rand2() * 2.0 - 1.0) * VARVELOCITY, 0.0, (rand2() * 2.0 - 1.0) * VARVELOCITY);
-                  myParticles[x].acl = make_float3(0.0);
-                  myParticles[x].mass = rand2() * VARMASS;
-                  perpendic = 1;
-            }
-            else {
-                  myParticles[x].pos = make_float3((rand2() * 2.0 - 1.0)* UNIVERSIZE/10, (rand2() * 2.0 - 1.0)* UNIVERSIZE , (rand2() * 2.0 - 1.0)* UNIVERSIZE);  //tall
-                  myParticles[x].vel = make_float3(0.0, (rand2() * 2.0 - 1.0) * VARVELOCITY, (rand2() * 2.0 - 1.0) * VARVELOCITY);
-                  myParticles[x].acl = make_float3(0.0);
-                  myParticles[x].mass = rand2() * VARMASS;
-                  perpendic = 0;
-            }
-      }
+      perp = true, velocity = true;
       break;
    case 8:
-      for (int x = 0; x < NUM_PARTICLES; ++x) {
-            myParticles[x].pos = make_float3(rand2() * 2.0 - 1.0, rand2() * 2.0 - 1.0, rand2() * 2.0 - 1.0) * UNIVERSIZE;
-            myParticles[x].vel = make_float3(0.0);
-            myParticles[x].acl = make_float3(0.0);
-            myParticles[x].mass = MASS;
-      }
+      massrand = false;
       break;
    case 9:
-      for (int x = 0; x < NUM_PARTICLES; ++x) {
-            myParticles[x].pos = make_float3(rand2() * 2.0 - 1.0, rand2() * 2.0 - 1.0, rand2() * 2.0 - 1.0) * UNIVERSIZE;
-            myParticles[x].vel = make_float3(rand2() * 2.0 - 1.0, rand2() * 2.0 - 1.0, rand2() * 2.0 - 1.0) * VARVELOCITY;
-            myParticles[x].acl = make_float3(0.0);
-            myParticles[x].mass = MASS;
-      }
+      massrand = false, velocity = true;
       break;
    case 10:
-      for (int x = 0; x < NUM_PARTICLES; ++x) {
-            myParticles[x].pos = make_float3(rand2() * 2.0 - 1.0, rand2() * 2.0 - 1.0, rand2() * 2.0 - 1.0) * UNIVERSIZE;
-            myParticles[x].vel = make_float3(rand2() * 2.0 - 1.0, rand2() * 2.0 - 1.0, rand2() * 2.0 - 1.0) * VARVELOCITY;
-            myParticles[x].acl = make_float3(0.0);
-            myParticles[x].mass = rand2() * VARMASS;
-      }
+      velocity = true;
       break;
+   }
+   int switcher = 0;
+   if(perp == true) {
+         for(int x = 0; x < NUM_PARTICLES; ++x) {
+               if(switcher == 0) {
+                     xrand = true, yrand = false, zrand = true;
+                     myParticles[x].pos = make_float3(xrand? (rand2() * 2.0 - 1.0)* UNIVERSIZE :(rand2() * 2.0 - 1.0)* UNIVERSIZE/10, yrand? (rand2() * 2.0 - 1.0)* UNIVERSIZE :(rand2() * 2.0 - 1.0)* UNIVERSIZE/10, zrand? (rand2() * 2.0 - 1.0)* UNIVERSIZE :(rand2() * 2.0 - 1.0)* UNIVERSIZE/10);
+                     if((myParticles[x].pos.x > 0) && (myParticles[x].pos.z < 0))
+                        vxrand = true, vzrand = true;
+                     if((myParticles[x].pos.x > 0) && (myParticles[x].pos.z > 0))
+                        vxrand = false, vzrand = true;
+                     if((myParticles[x].pos.x < 0) && (myParticles[x].pos.z > 0))
+                        vxrand = false, vzrand = false;
+                     else
+                        vxrand = true, vzrand = false;
+                     if(velocity)
+                        myParticles[x].vel = make_float3(vxrand? (rand2()) * VARVELOCITY :(rand2() - 1.0) * VARVELOCITY, 0.0,vzrand? (rand2()) * VARVELOCITY :(rand2() - 1.0) * VARVELOCITY);
+                     else
+                        myParticles[x].vel = make_float3(0.0);
+                     myParticles[x].mass = massrand? rand2()* UNIVERSIZE :MASS;
+                     myParticles[x].acl = make_float3(0.0);
+                     switcher = 1;
+               }
+               else {
+                     xrand = false; yrand = true, zrand = true;
+                     myParticles[x].pos = make_float3(xrand? (rand2() * 2.0 - 1.0)* UNIVERSIZE :(rand2() * 2.0 - 1.0)* UNIVERSIZE/10, yrand? (rand2() * 2.0 - 1.0)* UNIVERSIZE :(rand2() * 2.0 - 1.0)* UNIVERSIZE/10, zrand? (rand2() * 2.0 - 1.0)* UNIVERSIZE :(rand2() * 2.0 - 1.0)* UNIVERSIZE/10);
+                     if((myParticles[x].pos.y > 0) && (myParticles[x].pos.z < 0))
+                        vyrand = false, vzrand = false;
+                     if((myParticles[x].pos.y > 0) && (myParticles[x].pos.z > 0))
+                        vyrand = false, vzrand = true;
+                     if((myParticles[x].pos.y < 0) && (myParticles[x].pos.z > 0))
+                        vyrand = false, vzrand = false;
+                     else
+                        vyrand = true, vzrand = false;
+                     if(velocity)
+                        myParticles[x].vel = make_float3(0.0, vyrand? (rand2()) * VARVELOCITY :(rand2() - 1.0) * VARVELOCITY, vzrand? (rand2()) * VARVELOCITY :(rand2() - 1.0) * VARVELOCITY);
+                     else
+                        myParticles[x].vel = make_float3(0.0);
+                     myParticles[x].mass = massrand? rand2()* UNIVERSIZE :MASS;
+                     myParticles[x].acl = make_float3(0.0);
+                     switcher = 0;
+               }
+         }
+   }
+   else {
+         for (int x = 0; x < NUM_PARTICLES; ++x) {
+               myParticles[x].pos = make_float3(xrand? (rand2() * 2.0 - 1.0)* UNIVERSIZE :(rand2() * 2.0 - 1.0)* UNIVERSIZE/10, yrand? (rand2() * 2.0 - 1.0)* UNIVERSIZE :(rand2() * 2.0 - 1.0)* UNIVERSIZE/10, zrand? (rand2() * 2.0 - 1.0)* UNIVERSIZE :(rand2() * 2.0 - 1.0)* UNIVERSIZE/10);
+               if((myParticles[x].pos.x > 0) && (myParticles[x].pos.z < 0))                                      //back-left corner is false false
+                  vxrand = false, vzrand = false; //vxrand = false, vzrand = false;                              //close-right corner is true true
+               if((myParticles[x].pos.x > 0) && (myParticles[x].pos.z > 0))                                      //back-right corner is true false
+                  vxrand = false, vzrand = false;  //vxrand = true, vzrand = false;                              //close-left corner is false true
+               if((myParticles[x].pos.x < 0) && (myParticles[x].pos.z > 0))                                      //neg x is to the left
+                  vxrand = false, vzrand = false;  //vxrand = true, vzrand = false;                              //pos z is close to me
+               else
+                  vxrand = true, vzrand = true;  //vxrand = false, vzrand = true;
+               if(velocity)
+                  myParticles[x].vel = make_float3(vxrand? (rand2()) * VARVELOCITY :(rand2() - 1.0) * VARVELOCITY, 0.0,vzrand? (rand2()) * VARVELOCITY :(rand2() - 1.0) * VARVELOCITY);
+               else
+                  myParticles[x].vel = make_float3(0.0);
+               myParticles[x].mass = massrand? rand2()* UNIVERSIZE :MASS;
+               myParticles[x].acl = make_float3(0.0);
+         }
    }
 }
 
