@@ -7,6 +7,9 @@
 #include <stdio.h>
 #include <math.h>
 #include <windows.h>
+#include <sstream>
+#include <string.h>
+#include <stdarg.h>
 
 #include "float3.h"
 
@@ -50,6 +53,7 @@ Particle myParticles[NUM_PARTICLES];
 float viewAngle = 1.0f;
 float viewDistance = 4.8f;
 float viewHeight = 0.3f;
+int frameCount = 0;
 
 void *updateParticlesThread(void *ptr) {
    int i = *((int*) ptr); // I am thread i
@@ -122,9 +126,46 @@ void drawParticles() {
          glPopMatrix();
    }
 }
+void stroke_output(GLfloat x, GLfloat y, GLfloat z, int ident, char *format,...) {
+   va_list args;
+   char buffer[200], *p;
+
+   va_start(args, format);
+   vsprintf(buffer, format, args);
+   va_end(args);
+   glPushMatrix();
+   glTranslatef(x, y, z);
+   glScalef(0.0005, 0.0005, 0.0005);
+ //  GLfloat mat_emission[] = {0.2, 0.2, 0.2, 0.0};
+ // glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, mat_emission);
+   switch(ident) {
+   case 1:
+      glRotatef(180.0, 0.0, 1.0, 0.0);
+      break;
+   case 2:
+      glRotatef(90.0, 0.0, 1.0, 0.0);
+      break;
+   case 3:
+      glRotatef(270.0, 0.0, 1.0, 0.0);
+      break;
+   }
+   for (p= buffer; *p; p++) {
+       glutStrokeCharacter(GLUT_STROKE_ROMAN, *p);
+     }
+   glPopMatrix();
+}
 
 void drawRest() {
    glutWireCube(2.0f); // draw a cube with sides of 2
+   frameCount++;
+   int actualCount = (frameCount*(TIME/TIMESTEPS))/31536000;  //years
+   char marcus[100];
+   itoa(actualCount, marcus, 10);
+   strcat(marcus," years");
+   stroke_output(0.7, 0.9, 1.0, 0, marcus);
+   stroke_output(-0.7, 0.9, -1.0, 1, marcus);
+   stroke_output(1.0, 0.9, -0.7, 2, marcus);
+   stroke_output(-1.0, 0.9, 0.7, 3, marcus);
 }
 
 void display(void) {
@@ -146,19 +187,29 @@ void display(void) {
 void init(void) {
    GLfloat mat_specular[] = { 1.0, 1.0, 1.0, 1.0 };
    GLfloat mat_shininess[] = { 50.0 };
-   GLfloat light_position[] = { 1.0, 1.0, 1.0, 0.0 };
+   GLfloat light0_position[] = { 1.0, 1.0, 1.0, 0.0 };
+   GLfloat light0_diffuse[] = {1.0, 1.0, 1.0, 1.0};
+   GLfloat light0_specular[] = {1.0, 1.0, 1.0, 1.0};
+   GLfloat light1_position[] = { -1.0, -1.0, -1.0, 0.0 };
+   GLfloat light1_diffuse[] = {1.0, 1.0, 1.0, 1.0};
+   GLfloat light1_specular[] = {1.0, 1.0, 1.0, 1.0};
    glClearColor(0.0, 0.0, 0.0, 0.0);
    glShadeModel(GL_SMOOTH);
-
+   glLightfv(GL_LIGHT0, GL_POSITION, light0_position);
+   glLightfv(GL_LIGHT0, GL_DIFFUSE, light0_diffuse);
+   glLightfv(GL_LIGHT0, GL_SPECULAR, light0_specular);
+   glLightfv(GL_LIGHT1, GL_POSITION, light1_position);
+   glLightfv(GL_LIGHT1, GL_DIFFUSE, light1_diffuse);
+   glLightfv(GL_LIGHT1, GL_SPECULAR, light1_specular);
    glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
    glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
-   glLightfv(GL_LIGHT0, GL_POSITION, light_position);
 
    glMatrixMode(GL_PROJECTION); // set up perspectives in projection view
    srand(time(NULL));
 
    glEnable(GL_LIGHTING);
    glEnable(GL_LIGHT0);
+   glEnable(GL_LIGHT1);
    glEnable(GL_DEPTH_TEST);
 }
 
@@ -337,6 +388,8 @@ int main(int argc, char **argv) {
    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH); // double frame buffer, rgb colours, and depth detection
    glutInitWindowSize(WIDTH, HEIGHT);
    glutCreateWindow("N-body Gravitational Simulation"); // title of the window
+   glClearColor(1.0, 1.0, 1.0, 1.0);
+   glColor3f(0.0, 0.0, 0.0);
    glutDisplayFunc(display); // function called to render the window
    glutIdleFunc(display); // function called when window is idle (no need to update)
    glutSpecialFunc(processSpecialKeys);
