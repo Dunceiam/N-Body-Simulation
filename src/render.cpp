@@ -19,16 +19,16 @@
 #define HEIGHT          1080
 #define ROTATE_SPEED    0.01
 #define HEIGHT_SPEED    0.1
-
 #define NUM_THREADS     8
 int TIME =              250000;                 // s   (seconds per frame)
 int TIMESTEPS =         1;                        // s-1 (TIMESTEPS per TIME)
 float UNIVERSIZE =      1000000000000.0;            // 1 trillion km
 #define GRAV_CONSTANT   0.00000000006673         // m3 kg-1 s-2
-#define MASS            99446000000000000000000000000.0          // half mass of the sun kg
-#define VARMASS         198892000000000000000000000000.0;        // mass of the sun kg
 #define VARVELOCITY     25000.0
 #define SOFTEN          1000000000000.0            // km (empirically derived value should be slightly more than UNIVERSIZE)
+#define MAXMASS         198892000000000000000000000000.0
+#define MINMASS         9944600000000000000000.0
+#define MASS            99446000000000000000000000000.0
 
 #define RADIUS          0.003                                    //best value is 0.01
 #define SLICES          8
@@ -43,11 +43,8 @@ struct Particle {
 using namespace std;
 
 // Generates random float from 0.0 to 1.0
-float rand2() {
-   float temp = (float) rand() / (float) RAND_MAX;
-   if(temp == 0.0)
-      rand2();
-   return temp;
+float rand2(float min, float max) {
+   return (max - min) * ((float) rand() / (float) RAND_MAX) + min;
 }
 
 Particle* myParticles;
@@ -56,18 +53,16 @@ float viewDistance = 4.8f;
 float viewHeight = 0.3f;
 int frameCount, mode, yearCount, option, tell, NUM_PARTICLES  = 0;
 char* pathname;
-bool restart = false, quit = false;
+bool restart = false, quit = false, totalYears = false;
 
 void *updateParticlesThread(void *ptr) {
    int i = *((int*) ptr); // I am thread i
    int from = i * (NUM_PARTICLES / NUM_THREADS);
    int to = from + (NUM_PARTICLES / NUM_THREADS); // Same as (i + 1) * (PARTICLES * THREADS)
-
    for (int t2 = 0; t2 < TIMESTEPS; ++t2) {
          for (int x = from; x < to; ++x) {
                Particle* p = &myParticles[x]; // using a pointer to reduce typing
                p->acl = make_float3(0.0); // set acl to 0
-
                for (int y = 0; y < NUM_PARTICLES; ++y) {
                      Particle* p2 = &myParticles[y]; // using a pointer to reduce typing
                      if (x != y) {
@@ -160,6 +155,9 @@ void updateParticles() {
                }
                outfile << endl;
                outfile.close();
+               if(yearCount >= (frameCount*(TIME/TIMESTEPS))/31536000) {
+                     totalYears = true;
+               }
          }
       }
    else {
@@ -371,9 +369,9 @@ void menu(void) {
                      for(int x = 0; x < NUM_PARTICLES; ++x) {
                            if(switcher == 0) {
                                  xrand = true, yrand = false, zrand = true;
-                                 float r = rand2()*UNIVERSIZE;
-                                 float angle = rand2()*3.14;
-                                 float angle2 = rand2()*6.28;
+                                 float r = rand2(0.0, UNIVERSIZE);
+                                 float angle = rand2(0.0, 3.14);
+                                 float angle2 = rand2(0.0, 6.28);
                                  myParticles[x].pos = make_float3(xrand? sin(angle)*cos(angle2)*r :(sin(angle)*cos(angle2)*r)/10, yrand? sin(angle)*sin(angle2)*r :(sin(angle)*sin(angle2)*r)/10, zrand? cos(angle)*r :(cos(angle)*r)/10);
                                  if((myParticles[x].pos.x > 0) && (myParticles[x].pos.z < 0))
                                     vxrand = false, vzrand = false;
@@ -384,11 +382,11 @@ void menu(void) {
                                  else if((myParticles[x].pos.x < 0) && (myParticles[x].pos.z < 0))
                                     vxrand = false, vzrand = true;
                                  if(velocity)
-                                    myParticles[x].vel = make_float3(vxrand? (rand2()) * VARVELOCITY :(rand2() - 1.0) * VARVELOCITY, 0.0,vzrand? (rand2()) * VARVELOCITY :(rand2() - 1.0) * VARVELOCITY);
+                                    myParticles[x].vel = make_float3(vxrand? rand2(0.0, VARVELOCITY) : rand2(-VARVELOCITY, 0.0), 0.0,vzrand? rand2(0.0, VARVELOCITY) :rand2(-VARVELOCITY, 0.0));
                                  else
                                     myParticles[x].vel = make_float3(0.0);
                                  if(massrand)
-                                    myParticles[x].mass = rand2() * VARMASS;
+                                    myParticles[x].mass = rand2(MINMASS, MAXMASS);
                                  if(massrand == false)
                                     myParticles[x].mass = MASS;
                                  myParticles[x].acl = make_float3(0.0);
@@ -396,9 +394,9 @@ void menu(void) {
                            }
                            else {
                                  xrand = false; yrand = true, zrand = true;
-                                 float r = rand2()*UNIVERSIZE;
-                                 float angle = rand2()*3.14;
-                                 float angle2 = rand2()*6.28;
+                                 float r = rand2(0.0, UNIVERSIZE);
+                                 float angle = rand2(0.0, 3.14);
+                                 float angle2 = rand2(0.0, 6.28);
                                  myParticles[x].pos = make_float3(xrand? sin(angle)*cos(angle2)*r :(sin(angle)*cos(angle2)*r)/10, yrand? sin(angle)*sin(angle2)*r :(sin(angle)*sin(angle2)*r)/10, zrand? cos(angle)*r :(cos(angle)*r)/10);
                                  if((myParticles[x].pos.y > 0) && (myParticles[x].pos.z < 0))
                                     vyrand = true, vzrand = true;
@@ -409,11 +407,11 @@ void menu(void) {
                                  else if((myParticles[x].pos.y < 0) && (myParticles[x].pos.z < 0))
                                     vyrand = true, vzrand = false;
                                  if(velocity)
-                                    myParticles[x].vel = make_float3(0.0, vyrand? (rand2()) * VARVELOCITY :(rand2() - 1.0) * VARVELOCITY, vzrand? (rand2()) * VARVELOCITY :(rand2() - 1.0) * VARVELOCITY);
+                                    myParticles[x].vel = make_float3(0.0, vyrand? rand2(0.0, VARVELOCITY) : rand2(-VARVELOCITY, 0.0), vzrand? rand2(0.0, VARVELOCITY) :rand2(-VARVELOCITY, 0.0));
                                  else
                                     myParticles[x].vel = make_float3(0.0);
                                  if(massrand)
-                                    myParticles[x].mass = rand2() * VARMASS;
+                                    myParticles[x].mass = rand2(MINMASS, MAXMASS);
                                  if(massrand == false)
                                     myParticles[x].mass = MASS;
                                  myParticles[x].acl = make_float3(0.0);
@@ -424,9 +422,9 @@ void menu(void) {
                else {
                      for (int x = 0; x < NUM_PARTICLES; ++x) {
                            //     myParticles[x].pos = make_float3(xrand? (rand2() * 2.0 - 1.0)* UNIVERSIZE :(rand2() * 2.0 - 1.0)* UNIVERSIZE/10, yrand? (rand2() * 2.0 - 1.0)* UNIVERSIZE :(rand2() * 2.0 - 1.0)* UNIVERSIZE/10, zrand? (rand2() * 2.0 - 1.0)* UNIVERSIZE :(rand2() * 2.0 - 1.0)* UNIVERSIZE/10);
-                           float r = rand2()*UNIVERSIZE;
-                           float angle = rand2()*3.14;
-                           float angle2 = rand2()*6.28;
+                           float r = rand2(0.0, UNIVERSIZE);
+                           float angle = rand2(0.0, 3.14);
+                           float angle2 = rand2(0.0, 6.28);
                            myParticles[x].pos = make_float3(xrand? sin(angle)*cos(angle2)*r :(sin(angle)*cos(angle2)*r)/10, yrand? sin(angle)*sin(angle2)*r :(sin(angle)*sin(angle2)*r)/10, zrand? cos(angle)*r :(cos(angle)*r)/10);
                            if((myParticles[x].pos.x > 0) && (myParticles[x].pos.z < 0))                  //back-left corner is false false
                               vxrand = false, vzrand = false;                                            //close-right corner is true true
@@ -437,11 +435,11 @@ void menu(void) {
                            else if((myParticles[x].pos.x < 0) && (myParticles[x].pos.z < 0))
                               vxrand = false, vzrand = true;
                            if(velocity)
-                              myParticles[x].vel = make_float3(vxrand? (rand2()) * VARVELOCITY :(rand2() - 1.0) * VARVELOCITY, 0.0,vzrand? (rand2()) * VARVELOCITY :(rand2() - 1.0) * VARVELOCITY);
+                              myParticles[x].vel = make_float3(vxrand? rand2(0.0, VARVELOCITY) : rand2(-VARVELOCITY, 0.0), 0.0, vzrand? rand2(0.0, VARVELOCITY) : rand2(-VARVELOCITY, 0.0));
                            else
                               myParticles[x].vel = make_float3(0.0);
                            if(massrand)
-                              myParticles[x].mass = rand2() * VARMASS;
+                              myParticles[x].mass = rand2(MINMASS, MAXMASS);
                            if(massrand == false)
                               myParticles[x].mass = MASS;
                            myParticles[x].acl = make_float3(0.0);
@@ -489,7 +487,7 @@ void processSpecialKeys(int key, int x, int y) {
 }
 
 void calculateLoop() {
-   while(quit = false || totalYears = false) {
+   while((quit == false) && (totalYears == false)) {
          updateParticles();
    }
    glutDestroyWindow(1);
