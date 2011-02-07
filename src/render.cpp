@@ -52,8 +52,10 @@ float viewAngle = 1.0f;
 float viewDistance = 4.8f;
 float viewHeight = 0.3f;
 int frameCount, mode, yearCount, option, tell, NUM_PARTICLES  = 0;
-char* pathname;
+char pathname[256];
 bool restart = false, quit = false, totalYears = false;
+FILE* pFile;
+ifstream readFile;
 
 void *updateParticlesThread(void *ptr) {
    int i = *((int*) ptr); // I am thread i
@@ -94,38 +96,13 @@ void *updateParticlesThread(void *ptr) {
 }
 
 void readParticles() {
-   string line;
-   int ident, n = 0;
-   double coord = 0.0;
-   ifstream myfile;
-   myfile.open (pathname, ifstream::in);
-   if(myfile.is_open()) {
-         myfile.seekg(tell);
-         getline(myfile,line);
+   fread(myParticles, sizeof(Particle), NUM_PARTICLES, pFile);
+   fseek(pFile, (sizeof(Particle))*NUM_PARTICLES, SEEK_CUR);
+   for(int x=0; x<NUM_PARTICLES; x++) {
+         cout << "\n[" << myParticles[x].pos.x << "][" << myParticles[x].pos.y << "][" << myParticles[x].pos.z << "]";
    }
-   tell = myfile.tellg();
-   myfile.close();
-   for(int x = 0; x < NUM_PARTICLES; x++) {
-         for(int y = 0; y < 3; y++) {
-               n = line.find_first_of(',');
-               coord = atof(line.substr(0,n).c_str());
-               line.erase(0,n);
-               switch(ident) {
-               case 0:
-                  myParticles[x].pos.x = coord;
-                  ident = 1;
-                  break;
-               case 1:
-                  myParticles[x].pos.y = coord;
-                  ident = 2;
-                  break;
-               case 2:
-                  myParticles[x].pos.z = coord;
-                  ident = 0;
-                  break;
-               }
-         }
-   }
+   Sleep(75);
+   frameCount++;
 }
 
 void updateParticles() {
@@ -149,13 +126,11 @@ void updateParticles() {
                WaitForSingleObject(threads[i], INFINITE);
          }
          if(mode == 1) {
-               ofstream outfile(pathname, ios::app);
-               for(int x = 0; x < NUM_PARTICLES; x++) {
-                     outfile << myParticles[x].pos.x << "," << myParticles[x].pos.y << "," << myParticles[x].pos.z << ",";
-               }
-               outfile << endl;
-               outfile.close();
-               if(yearCount >= (frameCount*(TIME/TIMESTEPS))/31536000) {
+              fwrite(myParticles, sizeof(Particle), NUM_PARTICLES, pFile);
+              for(int x=0; x<NUM_PARTICLES; x++) {
+                       cout << "\n[" << myParticles[x].pos.x << "][" << myParticles[x].pos.y << "][" << myParticles[x].pos.z << "]";
+                 }
+               if(yearCount <= (frameCount*(TIME/TIMESTEPS))/31536000) {
                      totalYears = true;
                }
          }
@@ -271,27 +246,37 @@ void menu(void) {
          if(mode == 2) {
                cout << "File: ";
                cin >> pathname;
-               string line;
-               ifstream myfile;
-               myfile.open (pathname, ifstream::in);
-               if(myfile.is_open()) {
-                     myfile.seekg(tell);
-                     getline(myfile,line);
+               readFile.open (pathname, ios::in | ios::binary);
+               char line[100];
+               char* locate;
+               if(readFile.is_open()) {
+                     readFile.seekg(ios::beg);
+                     readFile.ignore(100,'/');
+                     int bytes = readFile.tellg();
+                     readFile.seekg(ios::beg);
+                     readFile.read(line,bytes);
+                     locate = strtok(line,",.");
+                     NUM_PARTICLES = atof(locate);
+                     locate = strtok(NULL,",.");
+                     TIME = atof(locate);
+                     locate = strtok(NULL,",.");
+                     TIMESTEPS = atof(locate);
+                     locate = strtok(NULL,",.");
+                     UNIVERSIZE = atof(locate);
+                     myParticles = new Particle[NUM_PARTICLES];
+                     cout << "\nNumber of Particles: " << NUM_PARTICLES;
+                     cout << "\nTime: " << TIME << " seconds.";
+                     cout << "\nTimesteps per time: " << TIMESTEPS;
+                     cout << "\nUniverse Size: " << UNIVERSIZE << " km.";
+                     cout << endl;
+                     readFile.close();
+                     pFile = fopen(pathname,"r");
+                     fseek(pFile, bytes, SEEK_SET);
                }
-               tell = myfile.tellg();
-               myfile.close();
-               int n = line.find_first_of(',');
-               NUM_PARTICLES = atof(line.substr(0,n).c_str());
-               line.erase(0,n);
-               n = line.find_first_of(',');
-               TIME = atof(line.substr(0,n).c_str());
-               line.erase(0,n);
-               n = line.find_first_of(',');
-               TIMESTEPS = atof(line.substr(0,n).c_str());
-               line.erase(0,n);
-               n = line.find_first_of(',');
-               UNIVERSIZE = atof(line.substr(0,n).c_str());
-               myParticles = new Particle[NUM_PARTICLES];
+               else {
+                     cout << "Error opening.";
+                     exit(1);
+               }
          }
          else {
                cout << "\n 0. Horizontal Disk\n";
@@ -316,10 +301,11 @@ void menu(void) {
                cin >> yearCount;
                cout << "\nFile: ";
                cin >> pathname;
-               ofstream outfile(pathname, ios::app);
-               outfile.open(pathname);
-               outfile << NUM_PARTICLES << "," << TIME << "," << TIMESTEPS << "," << UNIVERSIZE;
-               outfile.close();
+               pFile = fopen(pathname,"w");
+               fprintf(pFile, "%d,", NUM_PARTICLES);
+               fprintf(pFile, "%d,", TIME);
+               fprintf(pFile, "%d,", TIMESTEPS);
+               fprintf(pFile, "%f/", UNIVERSIZE);
          }
    }
    if(mode != 2) {
@@ -491,6 +477,7 @@ void calculateLoop() {
          updateParticles();
    }
    glutDestroyWindow(1);
+   fclose(pFile);
    delete[] myParticles;
    exit(0);
 }
