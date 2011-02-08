@@ -20,7 +20,7 @@
 #define ROTATE_SPEED    0.01
 #define HEIGHT_SPEED    0.1
 #define NUM_THREADS     8
-int TIME =              250000;                 // s   (seconds per frame)
+int TIME =              20000;                 // s   (seconds per frame)
 int TIMESTEPS =         1;                        // s-1 (TIMESTEPS per TIME)
 float UNIVERSIZE =      1000000000000.0;            // 1 trillion km
 #define GRAV_CONSTANT   0.00000000006673         // m3 kg-1 s-2
@@ -51,10 +51,11 @@ Particle* myParticles;
 float viewAngle = 1.0f;
 float viewDistance = 4.8f;
 float viewHeight = 0.3f;
-int frameCount, mode, yearCount, option, tell, NUM_PARTICLES  = 0;
+int mode, option, tell, NUM_PARTICLES, mspace  = 0;
+float frameCount, yearCount = 0;
 char pathname[256];
 bool restart = false, quit = false, totalYears = false;
-FILE* pFile;
+fstream writeFile;
 ifstream readFile;
 
 void *updateParticlesThread(void *ptr) {
@@ -96,12 +97,24 @@ void *updateParticlesThread(void *ptr) {
 }
 
 void readParticles() {
-   fread(myParticles, sizeof(Particle), NUM_PARTICLES, pFile);
-   fseek(pFile, (sizeof(Particle))*NUM_PARTICLES, SEEK_CUR);
-   for(int x=0; x<NUM_PARTICLES; x++) {
-         cout << "\n[" << myParticles[x].pos.x << "][" << myParticles[x].pos.y << "][" << myParticles[x].pos.z << "]";
+   char line[100];
+   char* locate;
+   if(readFile.is_open()) {
+         for(int x=0; x<NUM_PARTICLES; x++) {
+               readFile.getline(line,100);
+               locate = strtok(line,",");
+               myParticles[x].pos.x = atof(locate);
+               locate = strtok(NULL,",");
+               myParticles[x].pos.y = atof(locate);
+               locate = strtok(NULL,",");
+               myParticles[x].pos.z = atof(locate);
+         }
    }
-   Sleep(75);
+//   for(int x=0; x<NUM_PARTICLES; x++) {
+ //        cout << "[" << myParticles[x].pos.x << "][" << myParticles[x].pos.y << "][" << myParticles[x].pos.z << ""
+//   }
+   else { cout << "Error: File not open."; }
+   Sleep(mspace);
    frameCount++;
 }
 
@@ -126,10 +139,9 @@ void updateParticles() {
                WaitForSingleObject(threads[i], INFINITE);
          }
          if(mode == 1) {
-              fwrite(myParticles, sizeof(Particle), NUM_PARTICLES, pFile);
-              for(int x=0; x<NUM_PARTICLES; x++) {
-                       cout << "\n[" << myParticles[x].pos.x << "][" << myParticles[x].pos.y << "][" << myParticles[x].pos.z << "]";
-                 }
+               for(int x=0; x<NUM_PARTICLES; x++) {
+                     writeFile << myParticles[x].pos.x << "," << myParticles[x].pos.y << "," << myParticles[x].pos.z << ",\n";
+               }
                if(yearCount <= (frameCount*(TIME/TIMESTEPS))/31536000) {
                      totalYears = true;
                }
@@ -183,14 +195,14 @@ void stroke_output(GLfloat x, GLfloat y, GLfloat z, int ident, char *format,...)
 
 void drawRest() {
    glutWireCube(2.0f); // draw a cube with sides of 2
-   int actualCount = (frameCount*(TIME/TIMESTEPS))/31536000;  //years
+   unsigned int actualCount = (frameCount*(TIME/TIMESTEPS))/31536000;  //years
    char marcus[100];
    itoa(actualCount, marcus, 10);
    strcat(marcus," years");
-   stroke_output(0.7, 0.9, 1.0, 0, marcus);
-   stroke_output(-0.7, 0.9, -1.0, 1, marcus);
-   stroke_output(1.0, 0.9, -0.7, 2, marcus);
-   stroke_output(-1.0, 0.9, 0.7, 3, marcus);
+   stroke_output(0.6, 0.9, 1.0, 0, marcus);
+   stroke_output(-0.6, 0.9, -1.0, 1, marcus);
+   stroke_output(1.0, 0.9, -0.6, 2, marcus);
+   stroke_output(-1.0, 0.9, 0.6, 3, marcus);
 }
 
 void display(void) {
@@ -229,7 +241,7 @@ void init(void) {
    glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
 
    glMatrixMode(GL_PROJECTION); // set up perspectives in projection view
-   srand(time(NULL));
+   srand(time(0));
 
    glEnable(GL_LIGHTING);
    glEnable(GL_LIGHT0);
@@ -246,22 +258,21 @@ void menu(void) {
          if(mode == 2) {
                cout << "File: ";
                cin >> pathname;
-               readFile.open (pathname, ios::in | ios::binary);
+               cout << "Frame spacing (ms): ";
+               cin >> mspace;
+               readFile.open (pathname, ios::in);
                char line[100];
                char* locate;
                if(readFile.is_open()) {
                      readFile.seekg(ios::beg);
-                     readFile.ignore(100,'/');
-                     int bytes = readFile.tellg();
-                     readFile.seekg(ios::beg);
-                     readFile.read(line,bytes);
-                     locate = strtok(line,",.");
+                     readFile.getline(line,100);
+                     locate = strtok(line,",");
                      NUM_PARTICLES = atof(locate);
-                     locate = strtok(NULL,",.");
+                     locate = strtok(NULL,",");
                      TIME = atof(locate);
-                     locate = strtok(NULL,",.");
+                     locate = strtok(NULL,",");
                      TIMESTEPS = atof(locate);
-                     locate = strtok(NULL,",.");
+                     locate = strtok(NULL,",");
                      UNIVERSIZE = atof(locate);
                      myParticles = new Particle[NUM_PARTICLES];
                      cout << "\nNumber of Particles: " << NUM_PARTICLES;
@@ -269,9 +280,6 @@ void menu(void) {
                      cout << "\nTimesteps per time: " << TIMESTEPS;
                      cout << "\nUniverse Size: " << UNIVERSIZE << " km.";
                      cout << endl;
-                     readFile.close();
-                     pFile = fopen(pathname,"r");
-                     fseek(pFile, bytes, SEEK_SET);
                }
                else {
                      cout << "Error opening.";
@@ -301,11 +309,8 @@ void menu(void) {
                cin >> yearCount;
                cout << "\nFile: ";
                cin >> pathname;
-               pFile = fopen(pathname,"w");
-               fprintf(pFile, "%d,", NUM_PARTICLES);
-               fprintf(pFile, "%d,", TIME);
-               fprintf(pFile, "%d,", TIMESTEPS);
-               fprintf(pFile, "%f/", UNIVERSIZE);
+               writeFile.open (pathname, ios::out | ios::trunc);
+               writeFile << NUM_PARTICLES << "," << TIME << "," << TIMESTEPS << "," << UNIVERSIZE << ",\n";
          }
    }
    if(mode != 2) {
@@ -462,9 +467,17 @@ void processSpecialKeys(int key, int x, int y) {
       viewHeight -= ROTATE_SPEED;
       break;
    case GLUT_KEY_F5:
-      restart = true;
-      frameCount = 0;
-      menu();
+      if(mode != 2) {
+            restart = true;
+            frameCount = 0;
+            menu();
+      }
+      else {
+            char line[100];
+            readFile.seekg(ios::beg);
+            readFile.getline(line,100);
+            framecount = 0;
+      }
       break;
    case GLUT_KEY_F8:
       quit = true;
@@ -476,8 +489,9 @@ void calculateLoop() {
    while((quit == false) && (totalYears == false)) {
          updateParticles();
    }
+   readFile.close();
+   writeFile.close();
    glutDestroyWindow(1);
-   fclose(pFile);
    delete[] myParticles;
    exit(0);
 }
