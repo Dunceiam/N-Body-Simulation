@@ -20,17 +20,17 @@
 #define ROTATE_SPEED    0.01
 #define HEIGHT_SPEED    0.1
 #define NUM_THREADS     8
-int TIME =              20000;                 // s   (seconds per frame)
+int TIME =              400000;                 // s   (seconds per frame)
 int TIMESTEPS =         1;                        // s-1 (TIMESTEPS per TIME)
-float UNIVERSIZE =      1000000000000.0;            // 1 trillion km
+float UNIVERSIZE =      2000000000000.0;            // 2 lightyears
 #define GRAV_CONSTANT   0.00000000006673         // m3 kg-1 s-2
-#define VARVELOCITY     25000.0
+#define VARVELOCITY     2000.0
 #define SOFTEN          1000000000000.0            // km (empirically derived value should be slightly more than UNIVERSIZE)
-#define MAXMASS         198892000000000000000000000000.0
-#define MINMASS         9944600000000000000000.0
-#define MASS            99446000000000000000000000000.0
+#define MAXMASS         1988920000000000000000000000000.0
+#define MINMASS         9944600000000000000000000.0
+#define MASS            994460000000000000000000000000.0
 
-#define RADIUS          0.003                                    //best value is 0.01
+#define RADIUS          0.002                                    //best value is 0.01
 #define SLICES          8
 
 struct Particle {
@@ -51,7 +51,7 @@ Particle* myParticles;
 float viewAngle = 1.0f;
 float viewDistance = 4.8f;
 float viewHeight = 0.3f;
-int mode, option, tell, NUM_PARTICLES, mspace  = 0;
+int mode, option, tell, NUM_PARTICLES, mspace, newPercent, oldPercent  = 0;
 float frameCount, yearCount = 0;
 char pathname[256];
 bool restart = false, quit = false, totalYears = false;
@@ -100,15 +100,21 @@ void readParticles() {
    char line[100];
    char* locate;
    if(readFile.is_open()) {
-         for(int x=0; x<NUM_PARTICLES; x++) {
-               readFile.getline(line,100);
-               locate = strtok(line,",");
-               myParticles[x].pos.x = atof(locate);
-               locate = strtok(NULL,",");
-               myParticles[x].pos.y = atof(locate);
-               locate = strtok(NULL,",");
-               myParticles[x].pos.z = atof(locate);
-         }
+               for(int x=0; x<NUM_PARTICLES; x++) {
+                     if(readFile.fail()) {
+                           readFile.close();
+                           readFile.open (pathname, ios::in);
+                           readFile.seekg(ios::beg);
+                           frameCount = 0;
+                     }
+                     readFile.getline(line,100);
+                     locate = strtok(line,",");
+                     myParticles[x].pos.x = atof(locate);
+                     locate = strtok(NULL,",");
+                     myParticles[x].pos.y = atof(locate);
+                     locate = strtok(NULL,",");
+                     myParticles[x].pos.z = atof(locate);
+               }
    }
 //   for(int x=0; x<NUM_PARTICLES; x++) {
  //        cout << "[" << myParticles[x].pos.x << "][" << myParticles[x].pos.y << "][" << myParticles[x].pos.z << ""
@@ -145,18 +151,22 @@ void updateParticles() {
                if(yearCount <= (frameCount*(TIME/TIMESTEPS))/31536000) {
                      totalYears = true;
                }
+               newPercent = 100*(frameCount*(TIME/TIMESTEPS))/(31536000*yearCount);
+               if(newPercent != oldPercent) {
+                     cout << newPercent << "%\n";
+               }
+               oldPercent = newPercent;
+               frameCount++;
          }
       }
    else {
          readParticles();
    }
-   frameCount++;
 }
 
 void drawParticles() {
    for (int i = 0; i < NUM_PARTICLES; i++) {
          Particle* p = &myParticles[i]; // using a pointer to reduce typing
-
          glPushMatrix();
          // draw a sphere at the origin (0,0,0) and translate it to its final position
          glTranslatef(p->pos.x / UNIVERSIZE, p->pos.y / UNIVERSIZE, p->pos.z / UNIVERSIZE);
@@ -297,7 +307,8 @@ void menu(void) {
                cout << " 7. Horizontal + Vertical Disk w/ Velocity (Variable Mass)\n";
                cout << " 8. Random\n";
                cout << " 9. Random w/ Velocity\n";
-               cout << "10. Random w/ Velocity (Variable Mass)\n";
+               cout << "10. Random (Variable Mass)\n";
+               cout << "11. Random w/ Velocity (Variable Mass)\n";
                cout << "Option: ";
                cin >> option;
                cout << "\n Number of Particles: ";
@@ -352,6 +363,9 @@ void menu(void) {
                   massrand = false, velocity = true;
                   break;
                case 10:
+
+                  break;
+               case 11:
                   velocity = true;
                   break;
                }
@@ -476,7 +490,7 @@ void processSpecialKeys(int key, int x, int y) {
             char line[100];
             readFile.seekg(ios::beg);
             readFile.getline(line,100);
-            framecount = 0;
+            frameCount = 0;
       }
       break;
    case GLUT_KEY_F8:
