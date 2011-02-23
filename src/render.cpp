@@ -20,17 +20,23 @@
 #define ROTATE_SPEED    0.01
 #define HEIGHT_SPEED    0.1
 #define NUM_THREADS     8
-int TIME =              400000;                 // s   (seconds per frame)
+int TIME =              63072000;               // s   (seconds per frame, 2 years) 1576800000
 int TIMESTEPS =         1;                        // s-1 (TIMESTEPS per TIME)
-float UNIVERSIZE =      2000000000000.0;            // 2 lightyears
-#define GRAV_CONSTANT   0.00000000006673         // m3 kg-1 s-2
-#define VARVELOCITY     2000.0
-#define SOFTEN          1000000000000.0            // km (empirically derived value should be slightly more than UNIVERSIZE)
-#define MAXMASS         1988920000000000000000000000000.0
-#define MINMASS         9944600000000000000000000.0
-#define MASS            994460000000000000000000000000.0
+float UNIVERSIZE =      473026420000000;         // 50 lightyears radius (galaxy is 100,000 ly diameter. Therefore, 1/1000 scale )
+#define GRAV_CONSTANT   0.00000000006673          // m3 kg-1 s-2
+#define VARVELOCITY     30000.0                      //km/s
+#define SOFTEN          1000000000000.0           // km (empirically derived value should be slightly more than UNIVERSIZE)
+#define MAXMASS         720983500000000000000000000000.0
+#define MINMASS         7209835000000000000000000000.0    //100 times smaller
+#define MASS            720983500000000000000000000000.0                 // 7209835000000000000000000000000000000.0
 
-#define RADIUS          0.002                                    //best value is 0.01
+//galaxy is 100,000 ly diameter
+//1.1535736e+42 kg in milky way
+//With 20,000 particles, that's 5.767868e+37 kg per
+//Cut scale in half = 2.883934e+37 kg per
+//That's 49723000000000000000000000 times larger than our sun.
+
+#define RADIUS          0.003                                    //best value is 0.002
 #define SLICES          8
 
 struct Particle {
