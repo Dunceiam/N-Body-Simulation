@@ -20,14 +20,14 @@
 #define ROTATE_SPEED    0.01
 #define HEIGHT_SPEED    0.1
 #define NUM_THREADS     8
-int TIME =              63072000;               // s   (seconds per frame, 2 years)
+int TIME =              315569260;               // s   (seconds per frame, 10 years)
 int TIMESTEPS =         1;                        // s-1 (TIMESTEPS per TIME)
-float UNIVERSIZE =      473026420000000;         // 50 lightyears radius (galaxy is 100,000 ly diameter. Therefore, 1/1000 scale )
+float UNIVERSIZE =      946052840000000.0;         // 100 lightyears radius (galaxy is 100,000 ly diameter. Therefore, 1/500 scale ) 473026420000000
 #define GRAV_CONSTANT   0.00000000006673          // m3 kg-1 s-2
-#define VARVELOCITY     30000.0                      //km/s
+#define VARVELOCITY     5000.0                      //km/s
 #define SOFTEN          1000000000000.0           // km (empirically derived value should be slightly more than UNIVERSIZE)
 #define MAXMASS         720983500000000000000000000000.0
-#define MINMASS         7209835000000000000000000000.0    //100 times smaller
+#define MINMASS         72098350000000000000000000.0                   //100 times smaller
 #define MASS            720983500000000000000000000000.0                 // 7209835000000000000000000000000000000.0
 
 //galaxy is 100,000 ly diameter
@@ -58,7 +58,7 @@ float viewAngle = 1.0f;
 float viewDistance = 4.8f;
 float viewHeight = 0.3f;
 int mode, option, tell, NUM_PARTICLES, mspace, newPercent, oldPercent, particleOption  = 0;
-int frameCount, yearCount = 0;
+float frameCount, yearCount = 0;
 char pathname[256];
 bool restart = false, quit = false, totalYears = false;
 fstream writeFile;
@@ -162,8 +162,8 @@ void updateParticles() {
                      cout << newPercent << "%\n";
                }
                oldPercent = newPercent;
-               frameCount++;
          }
+         frameCount++;
       }
    else {
          readParticles();
@@ -412,8 +412,8 @@ void menu(void) {
                            if(switcher == 0) {
                                  xrand = true, yrand = false, zrand = true;
                                  float r = rand2(0.0, UNIVERSIZE);
-                                 float angle = rand2(0.0, 3.14);
-                                 float angle2 = rand2(0.0, 6.28);
+                                 float angle = rand2(0.0, 3.141592);
+                                 float angle2 = rand2(0.0, 6.283184);
                                  myParticles[x].pos = make_float3(xrand? sin(angle)*cos(angle2)*r :(sin(angle)*cos(angle2)*r)/10, yrand? sin(angle)*sin(angle2)*r :(sin(angle)*sin(angle2)*r)/10, zrand? cos(angle)*r :(cos(angle)*r)/10);
                                  if((myParticles[x].pos.x > 0) && (myParticles[x].pos.z < 0))
                                     vxrand = false, vzrand = false;
