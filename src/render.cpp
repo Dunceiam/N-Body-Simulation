@@ -20,7 +20,7 @@
 #define ROTATE_SPEED    0.01
 #define HEIGHT_SPEED    0.1
 #define NUM_THREADS     8
-int TIME =              63072000;               // s   (seconds per frame, 2 years) 1576800000
+int TIME =              63072000;               // s   (seconds per frame, 2 years)
 int TIMESTEPS =         1;                        // s-1 (TIMESTEPS per TIME)
 float UNIVERSIZE =      473026420000000;         // 50 lightyears radius (galaxy is 100,000 ly diameter. Therefore, 1/1000 scale )
 #define GRAV_CONSTANT   0.00000000006673          // m3 kg-1 s-2
@@ -57,8 +57,8 @@ Particle* myParticles;
 float viewAngle = 1.0f;
 float viewDistance = 4.8f;
 float viewHeight = 0.3f;
-int mode, option, tell, NUM_PARTICLES, mspace, newPercent, oldPercent  = 0;
-float frameCount, yearCount = 0;
+int mode, option, tell, NUM_PARTICLES, mspace, newPercent, oldPercent, particleOption  = 0;
+int frameCount, yearCount = 0;
 char pathname[256];
 bool restart = false, quit = false, totalYears = false;
 fstream writeFile;
@@ -176,7 +176,22 @@ void drawParticles() {
          glPushMatrix();
          // draw a sphere at the origin (0,0,0) and translate it to its final position
          glTranslatef(p->pos.x / UNIVERSIZE, p->pos.y / UNIVERSIZE, p->pos.z / UNIVERSIZE);
-         glutSolidSphere(RADIUS, SLICES, SLICES);
+         if(particleOption == 1) {
+               if(mode == 2) {
+                     glutSolidSphere(RADIUS, SLICES, SLICES);
+               }
+               else {
+                     glutSolidSphere(((p->mass / MAXMASS)*RADIUS), SLICES, SLICES);
+               }
+         }
+         else if(particleOption == 2) {
+               glutSolidCube(RADIUS);
+         }
+         else {
+               glBegin(GL_POINTS);
+               glVertex3f(0.0, 0.0, 0.0);
+               glEnd( );
+         }
          glPopMatrix();
    }
 }
@@ -190,8 +205,6 @@ void stroke_output(GLfloat x, GLfloat y, GLfloat z, int ident, char *format,...)
    glPushMatrix();
    glTranslatef(x, y, z);
    glScalef(0.0005, 0.0005, 0.0005);
-   //  GLfloat mat_emission[] = {0.2, 0.2, 0.2, 0.0};
-   // glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, mat_emission);
    switch(ident) {
    case 1:
       glRotatef(180.0, 0.0, 1.0, 0.0);
@@ -237,32 +250,38 @@ void display(void) {
 }
 
 void init(void) {
-   GLfloat mat_specular[] = { 1.0, 1.0, 1.0, 1.0 };
-   GLfloat mat_shininess[] = { 50.0 };
-   GLfloat light0_position[] = { 1.0, 1.0, 1.0, 0.0 };
-   GLfloat light0_diffuse[] = {1.0, 1.0, 1.0, 1.0};
-   GLfloat light0_specular[] = {1.0, 1.0, 1.0, 1.0};
-   GLfloat light1_position[] = { -1.0, -1.0, -1.0, 0.0 };
-   GLfloat light1_diffuse[] = {1.0, 1.0, 1.0, 1.0};
-   GLfloat light1_specular[] = {1.0, 1.0, 1.0, 1.0};
-   glClearColor(0.0, 0.0, 0.0, 0.0);
-   glShadeModel(GL_SMOOTH);
-   glLightfv(GL_LIGHT0, GL_POSITION, light0_position);
-   glLightfv(GL_LIGHT0, GL_DIFFUSE, light0_diffuse);
-   glLightfv(GL_LIGHT0, GL_SPECULAR, light0_specular);
-   glLightfv(GL_LIGHT1, GL_POSITION, light1_position);
-   glLightfv(GL_LIGHT1, GL_DIFFUSE, light1_diffuse);
-   glLightfv(GL_LIGHT1, GL_SPECULAR, light1_specular);
-   glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
-   glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
-
-   glMatrixMode(GL_PROJECTION); // set up perspectives in projection view
-   srand(time(0));
-
-   glEnable(GL_LIGHTING);
-   glEnable(GL_LIGHT0);
-   glEnable(GL_LIGHT1);
-   glEnable(GL_DEPTH_TEST);
+   if(particleOption != 3) {
+         GLfloat mat_specular[] = { 1.0, 1.0, 1.0, 1.0 };
+         GLfloat mat_shininess[] = { 50.0 };
+         GLfloat light0_position[] = { 1.0, 1.0, 1.0, 0.0 };
+         GLfloat light0_diffuse[] = {1.0, 1.0, 1.0, 1.0};
+         GLfloat light0_specular[] = {1.0, 1.0, 1.0, 1.0};
+         GLfloat light1_position[] = { -1.0, -1.0, -1.0, 0.0 };
+         GLfloat light1_diffuse[] = {1.0, 1.0, 1.0, 1.0};
+         GLfloat light1_specular[] = {1.0, 1.0, 1.0, 1.0};
+         glClearColor(0.0, 0.0, 0.0, 0.0);
+         glShadeModel(GL_SMOOTH);
+         glLightfv(GL_LIGHT0, GL_POSITION, light0_position);
+         glLightfv(GL_LIGHT0, GL_DIFFUSE, light0_diffuse);
+         glLightfv(GL_LIGHT0, GL_SPECULAR, light0_specular);
+         glLightfv(GL_LIGHT1, GL_POSITION, light1_position);
+         glLightfv(GL_LIGHT1, GL_DIFFUSE, light1_diffuse);
+         glLightfv(GL_LIGHT1, GL_SPECULAR, light1_specular);
+         glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
+         glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
+         glMatrixMode(GL_PROJECTION); // set up perspectives in projection view
+         srand(time(0));
+         glEnable(GL_LIGHT0);
+         glEnable(GL_LIGHT1);
+         glEnable(GL_LIGHTING);
+         glEnable(GL_DEPTH_TEST);
+   }
+   else {
+         glMatrixMode(GL_PROJECTION); // set up perspectives in projection view
+         srand(time(0));
+         glColor3f ( 1.0f, 1.0f, 1.0f ) ;
+         glClearColor(0.0, 0.0, 0.0, 0.0);
+   }
 }
 
 void menu(void) {
@@ -295,6 +314,11 @@ void menu(void) {
                      cout << "\nTime: " << TIME << " seconds.";
                      cout << "\nTimesteps per time: " << TIMESTEPS;
                      cout << "\nUniverse Size: " << UNIVERSIZE << " km.";
+                     cout << "\n\n1. Spheres\n";
+                     cout << "2. Cube\n";
+                     cout << "3. Particle\n";
+                     cout << "Particle shape: ";
+                     cin >> particleOption;
                      cout << endl;
                }
                else {
@@ -320,6 +344,13 @@ void menu(void) {
                cout << "\n Number of Particles: ";
                cin >> NUM_PARTICLES;
                myParticles = new Particle[NUM_PARTICLES];
+               cout << endl;
+               cout << "\n1. Spheres\n";
+               cout << "2. Cube\n";
+               cout << "3. Particle\n";
+               cout << "Particle shape: ";
+               cin >> particleOption;
+               cout << endl;
          }
          if(mode == 1) {
                cout << "\nNumber of years: ";

@@ -36,18 +36,6 @@ inline float3 operator-(float3 &a)
     return make_float3(-a.x, -a.y, -a.z);
 }
 
-// min
-static float3 fminf(float3 a, float3 b)
-{
-	return make_float3(fminf(a.x,b.x), fminf(a.y,b.y), fminf(a.z,b.z));
-}
-
-// max
-static float3 fmaxf(float3 a, float3 b)
-{
-	return make_float3(fmaxf(a.x,b.x), fmaxf(a.y,b.y), fmaxf(a.z,b.z));
-}
-
 // addition
 inline float3 operator+(float3 a, float3 b)
 {
