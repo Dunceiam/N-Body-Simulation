@@ -13,22 +13,22 @@
 #include <stdarg.h>
 #include <cstdlib>
 
-#include "float3.h"
+#include "double3.h"
 
 #define WIDTH           1920
 #define HEIGHT          1080
 #define ROTATE_SPEED    0.01
 #define HEIGHT_SPEED    0.1
 #define NUM_THREADS     8
-int TIME =              63072000;               // s   (seconds per frame, 2 years) 1576800000
+double TIME =           3153600000000.0;               // s   (seconds per frame, 100,000 years)
 int TIMESTEPS =         1;                        // s-1 (TIMESTEPS per TIME)
-float UNIVERSIZE =      473026420000000;         // 50 lightyears radius (galaxy is 100,000 ly diameter. Therefore, 1/1000 scale )
+double UNIVERSIZE =     11825660500000000.0;         // 1250 lightyears radius (galaxy is 100,000 ly diameter. Therefore, 1/40 scale )
 #define GRAV_CONSTANT   0.00000000006673          // m3 kg-1 s-2
-#define VARVELOCITY     30000.0                      //km/s
+#define VARVELOCITY     217.26144                      //km/s
 #define SOFTEN          1000000000000.0           // km (empirically derived value should be slightly more than UNIVERSIZE)
-#define MAXMASS         720983500000000000000000000000.0
-#define MINMASS         7209835000000000000000000000.0    //100 times smaller
-#define MASS            720983500000000000000000000000.0                 // 7209835000000000000000000000000000000.0
+#define MAXMASS         1441967000000000000000000000000000000.0
+#define MINMASS         144196700000000000000000000000000000.0    //100 times smaller
+#define MASS            1441967000000000000000000000000000000.0                 // 7209835000000000000000000000000000000.0
 
 //galaxy is 100,000 ly diameter
 //1.1535736e+42 kg in milky way
@@ -40,25 +40,25 @@ float UNIVERSIZE =      473026420000000;         // 50 lightyears radius (galaxy
 #define SLICES          8
 
 struct Particle {
-   float3 pos;
-   float3 vel;
-   float3 acl;
-   float mass;
+   double3 pos;
+   double3 vel;
+   double3 acl;
+   double mass;
 };
 
 using namespace std;
 
-// Generates random float from 0.0 to 1.0
-float rand2(float min, float max) {
-   return (max - min) * ((float) rand() / (float) RAND_MAX) + min;
+// Generates random double from 0.0 to 1.0
+double rand2(double min, double max) {
+   return (max - min) * ((double) rand() / (double) RAND_MAX) + min;
 }
 
 Particle* myParticles;
-float viewAngle = 1.0f;
-float viewDistance = 4.8f;
-float viewHeight = 0.3f;
-int mode, option, tell, NUM_PARTICLES, mspace, newPercent, oldPercent  = 0;
-float frameCount, yearCount = 0;
+double viewAngle = 1.0f;
+double viewDistance = 4.8f;
+double viewHeight = 0.3f;
+int mode, option, tell, NUM_PARTICLES, mspace, newPercent, oldPercent, particleOption  = 0;
+double frameCount, yearCount = 0;
 char pathname[256];
 bool restart = false, quit = false, totalYears = false;
 fstream writeFile;
@@ -71,12 +71,12 @@ void *updateParticlesThread(void *ptr) {
    for (int t2 = 0; t2 < TIMESTEPS; ++t2) {
          for (int x = from; x < to; ++x) {
                Particle* p = &myParticles[x]; // using a pointer to reduce typing
-               p->acl = make_float3(0.0); // set acl to 0
+               p->acl = make_double3(0.0); // set acl to 0
                for (int y = 0; y < NUM_PARTICLES; ++y) {
                      Particle* p2 = &myParticles[y]; // using a pointer to reduce typing
                      if (x != y) {
-                           float distance = length(p2->pos - p->pos);
-                           float gravity = GRAV_CONSTANT * p->mass * p2->mass / (pow(distance, 2.0) + SOFTEN * SOFTEN);
+                           double distance = length(p2->pos - p->pos);
+                           double gravity = GRAV_CONSTANT * p->mass * p2->mass / (pow(distance, 2.0) + SOFTEN * SOFTEN);
                            p->acl += gravity * (p2->pos - p->pos) / distance; // add the force to the acceleration
                      }
                }
@@ -86,9 +86,9 @@ void *updateParticlesThread(void *ptr) {
          for (int x = from; x < to; ++x) {
                Particle* p = &myParticles[x]; // using a pointer to reduce typing
 
-               float deltat = (float) TIME / (float) TIMESTEPS;
+               double deltat = (double) TIME / (double) TIMESTEPS;
 
-               float3 vel = p->vel;
+               double3 vel = p->vel;
 
                p->vel += p->acl * deltat;
                p->pos += vel * deltat + 0.5 * p->acl * pow(deltat, 2.0);
@@ -175,8 +175,23 @@ void drawParticles() {
          Particle* p = &myParticles[i]; // using a pointer to reduce typing
          glPushMatrix();
          // draw a sphere at the origin (0,0,0) and translate it to its final position
-         glTranslatef(p->pos.x / UNIVERSIZE, p->pos.y / UNIVERSIZE, p->pos.z / UNIVERSIZE);
-         glutSolidSphere(RADIUS, SLICES, SLICES);
+         glTranslated(p->pos.x / UNIVERSIZE, p->pos.y / UNIVERSIZE, p->pos.z / UNIVERSIZE);
+         if(particleOption == 1) {
+               if(mode == 2) {
+                     glutSolidSphere(RADIUS, SLICES, SLICES);
+               }
+               else {
+                     glutSolidSphere(((p->mass / MAXMASS)*RADIUS), SLICES, SLICES);
+               }
+         }
+         else if(particleOption == 2) {
+               glutSolidCube(RADIUS);
+         }
+         else {
+               glBegin(GL_POINTS);
+               glVertex3f(0.0, 0.0, 0.0);
+               glEnd( );
+         }
          glPopMatrix();
    }
 }
@@ -190,8 +205,6 @@ void stroke_output(GLfloat x, GLfloat y, GLfloat z, int ident, char *format,...)
    glPushMatrix();
    glTranslatef(x, y, z);
    glScalef(0.0005, 0.0005, 0.0005);
-   //  GLfloat mat_emission[] = {0.2, 0.2, 0.2, 0.0};
-   // glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, mat_emission);
    switch(ident) {
    case 1:
       glRotatef(180.0, 0.0, 1.0, 0.0);
@@ -237,32 +250,39 @@ void display(void) {
 }
 
 void init(void) {
-   GLfloat mat_specular[] = { 1.0, 1.0, 1.0, 1.0 };
-   GLfloat mat_shininess[] = { 50.0 };
-   GLfloat light0_position[] = { 1.0, 1.0, 1.0, 0.0 };
-   GLfloat light0_diffuse[] = {1.0, 1.0, 1.0, 1.0};
-   GLfloat light0_specular[] = {1.0, 1.0, 1.0, 1.0};
-   GLfloat light1_position[] = { -1.0, -1.0, -1.0, 0.0 };
-   GLfloat light1_diffuse[] = {1.0, 1.0, 1.0, 1.0};
-   GLfloat light1_specular[] = {1.0, 1.0, 1.0, 1.0};
-   glClearColor(0.0, 0.0, 0.0, 0.0);
-   glShadeModel(GL_SMOOTH);
-   glLightfv(GL_LIGHT0, GL_POSITION, light0_position);
-   glLightfv(GL_LIGHT0, GL_DIFFUSE, light0_diffuse);
-   glLightfv(GL_LIGHT0, GL_SPECULAR, light0_specular);
-   glLightfv(GL_LIGHT1, GL_POSITION, light1_position);
-   glLightfv(GL_LIGHT1, GL_DIFFUSE, light1_diffuse);
-   glLightfv(GL_LIGHT1, GL_SPECULAR, light1_specular);
-   glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
-   glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
+   if(particleOption != 3) {
+         GLfloat mat_specular[] = { 1.0, 1.0, 1.0, 1.0 };
+         GLfloat mat_shininess[] = { 50.0 };
+         GLfloat light0_position[] = { 1.0, 1.0, 1.0, 0.0 };
+         GLfloat light0_diffuse[] = {1.0, 1.0, 1.0, 1.0};
+         GLfloat light0_specular[] = {1.0, 1.0, 1.0, 1.0};
+         GLfloat light1_position[] = { -1.0, -1.0, -1.0, 0.0 };
+         GLfloat light1_diffuse[] = {1.0, 1.0, 1.0, 1.0};
+         GLfloat light1_specular[] = {1.0, 1.0, 1.0, 1.0};
+         glClearColor(0.0, 0.0, 0.0, 0.0);
+         glShadeModel(GL_SMOOTH);
+         glLightfv(GL_LIGHT0, GL_POSITION, light0_position);
+         glLightfv(GL_LIGHT0, GL_DIFFUSE, light0_diffuse);
+         glLightfv(GL_LIGHT0, GL_SPECULAR, light0_specular);
+         glLightfv(GL_LIGHT1, GL_POSITION, light1_position);
+         glLightfv(GL_LIGHT1, GL_DIFFUSE, light1_diffuse);
+         glLightfv(GL_LIGHT1, GL_SPECULAR, light1_specular);
+         glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
+         glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
 
-   glMatrixMode(GL_PROJECTION); // set up perspectives in projection view
-   srand(time(0));
-
-   glEnable(GL_LIGHTING);
-   glEnable(GL_LIGHT0);
-   glEnable(GL_LIGHT1);
-   glEnable(GL_DEPTH_TEST);
+         glMatrixMode(GL_PROJECTION); // set up perspectives in projection view
+         srand(time(0));
+         glEnable(GL_LIGHT0);
+         glEnable(GL_LIGHT1);
+         glEnable(GL_LIGHTING);
+         glEnable(GL_DEPTH_TEST);
+   }
+   else {
+         glMatrixMode(GL_PROJECTION); // set up perspectives in projection view
+         srand(time(0));
+         glColor3f ( 1.0f, 1.0f, 1.0f ) ;
+         glClearColor(0.0, 0.0, 0.0, 0.0);
+   }
 }
 
 void menu(void) {
@@ -295,6 +315,11 @@ void menu(void) {
                      cout << "\nTime: " << TIME << " seconds.";
                      cout << "\nTimesteps per time: " << TIMESTEPS;
                      cout << "\nUniverse Size: " << UNIVERSIZE << " km.";
+                     cout << "\n\n1. Spheres\n";
+                     cout << "2. Cube\n";
+                     cout << "3. Particle\n";
+                     cout << "Particle shape: ";
+                     cin >> particleOption;
                      cout << endl;
                }
                else {
@@ -320,6 +345,13 @@ void menu(void) {
                cout << "\n Number of Particles: ";
                cin >> NUM_PARTICLES;
                myParticles = new Particle[NUM_PARTICLES];
+               cout << endl;
+               cout << "\n1. Spheres\n";
+               cout << "2. Cube\n";
+               cout << "3. Particle\n";
+               cout << "Particle shape: ";
+               cin >> particleOption;
+               cout << endl;
          }
          if(mode == 1) {
                cout << "\nNumber of years: ";
@@ -380,10 +412,10 @@ void menu(void) {
                      for(int x = 0; x < NUM_PARTICLES; ++x) {
                            if(switcher == 0) {
                                  xrand = true, yrand = false, zrand = true;
-                                 float r = rand2(0.0, UNIVERSIZE);
-                                 float angle = rand2(0.0, 3.14);
-                                 float angle2 = rand2(0.0, 6.28);
-                                 myParticles[x].pos = make_float3(xrand? sin(angle)*cos(angle2)*r :(sin(angle)*cos(angle2)*r)/10, yrand? sin(angle)*sin(angle2)*r :(sin(angle)*sin(angle2)*r)/10, zrand? cos(angle)*r :(cos(angle)*r)/10);
+                                 double r = rand2(0.0, UNIVERSIZE);
+                                 double angle = rand2(0.0, 3.14);
+                                 double angle2 = rand2(0.0, 6.28);
+                                 myParticles[x].pos = make_double3(xrand? sin(angle)*cos(angle2)*r :(sin(angle)*cos(angle2)*r)/10, yrand? sin(angle)*sin(angle2)*r :(sin(angle)*sin(angle2)*r)/10, zrand? cos(angle)*r :(cos(angle)*r)/10);
                                  if((myParticles[x].pos.x > 0) && (myParticles[x].pos.z < 0))
                                     vxrand = false, vzrand = false;
                                  else if((myParticles[x].pos.x > 0) && (myParticles[x].pos.z > 0))
@@ -393,22 +425,22 @@ void menu(void) {
                                  else if((myParticles[x].pos.x < 0) && (myParticles[x].pos.z < 0))
                                     vxrand = false, vzrand = true;
                                  if(velocity)
-                                    myParticles[x].vel = make_float3(vxrand? rand2(0.0, VARVELOCITY) : rand2(-VARVELOCITY, 0.0), 0.0,vzrand? rand2(0.0, VARVELOCITY) :rand2(-VARVELOCITY, 0.0));
+                                    myParticles[x].vel = make_double3(vxrand? rand2(0.0, VARVELOCITY) : rand2(-VARVELOCITY, 0.0), 0.0,vzrand? rand2(0.0, VARVELOCITY) :rand2(-VARVELOCITY, 0.0));
                                  else
-                                    myParticles[x].vel = make_float3(0.0);
+                                    myParticles[x].vel = make_double3(0.0);
                                  if(massrand)
                                     myParticles[x].mass = rand2(MINMASS, MAXMASS);
                                  if(massrand == false)
                                     myParticles[x].mass = MASS;
-                                 myParticles[x].acl = make_float3(0.0);
+                                 myParticles[x].acl = make_double3(0.0);
                                  switcher = 1;
                            }
                            else {
                                  xrand = false; yrand = true, zrand = true;
-                                 float r = rand2(0.0, UNIVERSIZE);
-                                 float angle = rand2(0.0, 3.14);
-                                 float angle2 = rand2(0.0, 6.28);
-                                 myParticles[x].pos = make_float3(xrand? sin(angle)*cos(angle2)*r :(sin(angle)*cos(angle2)*r)/10, yrand? sin(angle)*sin(angle2)*r :(sin(angle)*sin(angle2)*r)/10, zrand? cos(angle)*r :(cos(angle)*r)/10);
+                                 double r = rand2(0.0, UNIVERSIZE);
+                                 double angle = rand2(0.0, 3.14);
+                                 double angle2 = rand2(0.0, 6.28);
+                                 myParticles[x].pos = make_double3(xrand? sin(angle)*cos(angle2)*r :(sin(angle)*cos(angle2)*r)/10, yrand? sin(angle)*sin(angle2)*r :(sin(angle)*sin(angle2)*r)/10, zrand? cos(angle)*r :(cos(angle)*r)/10);
                                  if((myParticles[x].pos.y > 0) && (myParticles[x].pos.z < 0))
                                     vyrand = true, vzrand = true;
                                  else if((myParticles[x].pos.y > 0) && (myParticles[x].pos.z > 0))
@@ -418,25 +450,25 @@ void menu(void) {
                                  else if((myParticles[x].pos.y < 0) && (myParticles[x].pos.z < 0))
                                     vyrand = true, vzrand = false;
                                  if(velocity)
-                                    myParticles[x].vel = make_float3(0.0, vyrand? rand2(0.0, VARVELOCITY) : rand2(-VARVELOCITY, 0.0), vzrand? rand2(0.0, VARVELOCITY) :rand2(-VARVELOCITY, 0.0));
+                                    myParticles[x].vel = make_double3(0.0, vyrand? rand2(0.0, VARVELOCITY) : rand2(-VARVELOCITY, 0.0), vzrand? rand2(0.0, VARVELOCITY) :rand2(-VARVELOCITY, 0.0));
                                  else
-                                    myParticles[x].vel = make_float3(0.0);
+                                    myParticles[x].vel = make_double3(0.0);
                                  if(massrand)
                                     myParticles[x].mass = rand2(MINMASS, MAXMASS);
                                  if(massrand == false)
                                     myParticles[x].mass = MASS;
-                                 myParticles[x].acl = make_float3(0.0);
+                                 myParticles[x].acl = make_double3(0.0);
                                  switcher = 0;
                            }
                      }
                }
                else {
                      for (int x = 0; x < NUM_PARTICLES; ++x) {
-                           //     myParticles[x].pos = make_float3(xrand? (rand2() * 2.0 - 1.0)* UNIVERSIZE :(rand2() * 2.0 - 1.0)* UNIVERSIZE/10, yrand? (rand2() * 2.0 - 1.0)* UNIVERSIZE :(rand2() * 2.0 - 1.0)* UNIVERSIZE/10, zrand? (rand2() * 2.0 - 1.0)* UNIVERSIZE :(rand2() * 2.0 - 1.0)* UNIVERSIZE/10);
-                           float r = rand2(0.0, UNIVERSIZE);
-                           float angle = rand2(0.0, 3.14);
-                           float angle2 = rand2(0.0, 6.28);
-                           myParticles[x].pos = make_float3(xrand? sin(angle)*cos(angle2)*r :(sin(angle)*cos(angle2)*r)/10, yrand? sin(angle)*sin(angle2)*r :(sin(angle)*sin(angle2)*r)/10, zrand? cos(angle)*r :(cos(angle)*r)/10);
+                           //     myParticles[x].pos = make_double3(xrand? (rand2() * 2.0 - 1.0)* UNIVERSIZE :(rand2() * 2.0 - 1.0)* UNIVERSIZE/10, yrand? (rand2() * 2.0 - 1.0)* UNIVERSIZE :(rand2() * 2.0 - 1.0)* UNIVERSIZE/10, zrand? (rand2() * 2.0 - 1.0)* UNIVERSIZE :(rand2() * 2.0 - 1.0)* UNIVERSIZE/10);
+                           double r = rand2(0.0, UNIVERSIZE);
+                           double angle = rand2(0.0, 3.14);
+                           double angle2 = rand2(0.0, 6.28);
+                           myParticles[x].pos = make_double3(xrand? sin(angle)*cos(angle2)*r :(sin(angle)*cos(angle2)*r)/10, yrand? sin(angle)*sin(angle2)*r :(sin(angle)*sin(angle2)*r)/10, zrand? cos(angle)*r :(cos(angle)*r)/10);
                            if((myParticles[x].pos.x > 0) && (myParticles[x].pos.z < 0))                  //back-left corner is false false
                               vxrand = false, vzrand = false;                                            //close-right corner is true true
                            else if((myParticles[x].pos.x > 0) && (myParticles[x].pos.z > 0))             //back-right corner is true false
@@ -446,14 +478,14 @@ void menu(void) {
                            else if((myParticles[x].pos.x < 0) && (myParticles[x].pos.z < 0))
                               vxrand = false, vzrand = true;
                            if(velocity)
-                              myParticles[x].vel = make_float3(vxrand? rand2(0.0, VARVELOCITY) : rand2(-VARVELOCITY, 0.0), 0.0, vzrand? rand2(0.0, VARVELOCITY) : rand2(-VARVELOCITY, 0.0));
+                              myParticles[x].vel = make_double3(vxrand? rand2(0.0, VARVELOCITY) : rand2(-VARVELOCITY, 0.0), 0.0, vzrand? rand2(0.0, VARVELOCITY) : rand2(-VARVELOCITY, 0.0));
                            else
-                              myParticles[x].vel = make_float3(0.0);
+                              myParticles[x].vel = make_double3(0.0);
                            if(massrand)
                               myParticles[x].mass = rand2(MINMASS, MAXMASS);
                            if(massrand == false)
                               myParticles[x].mass = MASS;
-                           myParticles[x].acl = make_float3(0.0);
+                           myParticles[x].acl = make_double3(0.0);
                      }
                }
 
